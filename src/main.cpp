@@ -19,6 +19,25 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <HTTPClient.h>
+#include <Bounce2.h>
+
+class TouchButton : public Bounce2::Button
+{
+public:
+  TouchButton(touch_value_t threshold) : _threshold(threshold)
+  {
+  }
+  void reset() {
+     stateChangeLastTime = millis();
+  }
+
+protected:
+  touch_value_t _threshold;
+  virtual void setPinMode(int pin, int mode)
+  { /* do nothing */
+  }
+  virtual bool readCurrentState() { return touchRead(pin) < _threshold; }
+};
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -26,12 +45,17 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 #define Threshold 40 /* Greater the value, more the sensitivity */
+TouchButton touchButton(Threshold);
 
 // variabls for blinking an LED with Millis
 const int led = 2;                // ESP32 Pin to which onboard LED is connected
 unsigned long previousMillis = 0; // will store last time LED was updated
 const long interval = 300;        // interval at which to blink (milliseconds)
 int ledState = LOW;               // ledState used to set the LED
+
+bool uploadMode = false;
+bool latched = false;
+bool running = false;
 
 AsyncWebServer server(80);
 
@@ -134,7 +158,7 @@ void pullMessage()
     Serial.println(payload);
 
     delay(100);
-    display.println("ASD ASD");
+    display.println(payload);
     display.display();
   }
   else
@@ -148,6 +172,7 @@ void pullMessage()
 void callback()
 {
   sleepTimer = 0;
+  // Serial.println("touched");
   // placeholder callback function
 }
 
@@ -179,7 +204,13 @@ void initDisplay()
 
 void setup(void)
 {
+  running = false;
   pinMode(led, OUTPUT);
+
+  touchButton.attach(T3);
+  touchButton.interval(50); // interval in ms
+  touchButton.reset();
+
   Serial.begin(115200);
 
   initDisplay();
@@ -208,28 +239,30 @@ void setup(void)
   AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
   Serial.println("HTTP server started");
-
-  touchAttachInterrupt(T3, callback, Threshold);
-
-  // Configure Touchpad as wakeup source
-  esp_sleep_enable_touchpad_wakeup();
+  
+  uploadMode = false;
+  latched = false;
+  running = true;
+  touchButton.reset();
 }
-
-elapsedMillis touchTimer;
-bool uploadMode = false;
 
 void loop(void)
 {
+  if(!running)
+    return;
   // loop to blink without delay
   unsigned long currentMillis = millis();
 
-if(uploadMode){
-  display.setCursor(0, 0);
-  display.setTextColor(WHITE, BLACK);
-  display.clearDisplay();
-  display.println(F("Upload"));
-  display.display();
-}
+  if (uploadMode)
+  {
+    display.setCursor(0, 0);
+    display.setTextColor(WHITE, BLACK);
+    display.clearDisplay();
+    display.println(F("Upload"));
+    display.print(WiFi.localIP());
+    display.println(F("/update"));
+    display.display();
+  }
 
   if (uploadMode && currentMillis - previousMillis >= interval)
   {
@@ -241,46 +274,42 @@ if(uploadMode){
     digitalWrite(led, ledState);
   }
 
-  if (!uploadMode && sleepTimer > 10000)
+  if (!uploadMode)
   {
-    // Go to sleep now
-    Serial.println("Going to sleep now");
-    display.clearDisplay();
-    display.ssd1306_command(SSD1306_DISPLAYOFF);
-    esp_deep_sleep_start();
+    if (sleepTimer > 10000)
+    {
+      // Go to sleep now
+      Serial.println("Going to sleep now");
+      display.clearDisplay();
+      display.ssd1306_command(SSD1306_DISPLAYOFF);
+
+      touchAttachInterrupt(T3, callback, Threshold);
+      esp_sleep_enable_touchpad_wakeup();
+
+      esp_deep_sleep_start();
+    }
+  } else {
+    sleepTimer = 0;
   }
 
-  int touch = touchRead(T3);
-  // Serial.println(touch);
-  if (touch > Threshold)
+  touchButton.update();
+  bool touched = touchButton.read();
+  if (touchButton.changed())
   {
-    touchTimer = 0;
+    Serial.println(touched);
+    if (!touched)
+      latched = false;
   }
-  else
+  if (!latched && touched && touchButton.currentDuration() > 2000)
   {
-    if (touchTimer > 2000)
-    {
-      uploadMode = !uploadMode;
-      touchTimer = 0;
-      Serial.print("uploadMode: ");
-      Serial.println(uploadMode ? "true" : "false");
+    latched = true;
+    uploadMode = !uploadMode;
+    if(!uploadMode) {
+      digitalWrite(led, LOW);
+      pullMessage();
     }
   }
 }
-
-// /*********
-//   Complete project details at https://randomnerdtutorials.com
-
-//   This is an example for our Monochrome OLEDs based on SSD1306 drivers. Pick one up today in the adafruit shop! ------> http://www.adafruit.com/category/63_98
-//   This example is for a 128x32 pixel display using I2C to communicate 3 pins are required to interface (two I2C and one reset).
-//   Adafruit invests time and resources providing this open source code, please support Adafruit and open-source hardware by purchasing products from Adafruit!
-//   Written by Limor Fried/Ladyada for Adafruit Industries, with contributions from the open source community. BSD license, check license.txt for more information All text above, and the splash screen below must be included in any redistribution.
-// *********/
-
-// #include <WiFi.h>
-// #include <WifiConfig.h>
-
-// #define NUMFLAKES 10 // Number of snowflakes in the animation example
 
 // #define LOGO_HEIGHT 16
 // #define LOGO_WIDTH 16
@@ -301,44 +330,3 @@ if(uploadMode){
 //      B01111100, B11110000,
 //      B01110000, B01110000,
 //      B00000000, B00110000};
-
-// void initWiFi()
-// {
-//   Serial.println("Connecting to WiFi ..");
-//   WiFi.mode(WIFI_STA);
-//   WiFi.begin(SSID, PASSWORD);
-//   uint8_t i = 0;
-//   while (WiFi.status() != WL_CONNECTED)
-//   {
-//     if (i++ % 2 == 0)
-//       Serial.print('.');
-//     else
-//       Serial.print(" .");
-//     // Serial.Serial();
-//     delay(500);
-//   }
-//   // Serial.clearSerial();
-//   Serial.println(WiFi.localIP());
-//   display.clearDisplay();
-
-//   display.setTextSize(1);      // Normal 1:1 pixel scale
-//   display.setTextColor(WHITE); // Draw white text
-//   display.setCursor(0, 0);     // Start at top-left corner
-//   display.println(WiFi.localIP().toString());
-//   display.display();
-// }
-
-// void setup()
-// {
-//   Serial.begin(115200);
-//   int i = 0;
-//   while (!Serial && i++ < 1000)
-//     ;
-
-// }
-
-// void loop()
-// {
-//   if(!digitalRead(0))
-//     pullMessage();
-// }
