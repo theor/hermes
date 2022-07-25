@@ -8,8 +8,6 @@
   https://github.com/ayushsharma82/AsyncElegantOTA
 */
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
 #include <Arduino.h>
 #include <Wire.h>
 #include <AsyncTCP.h>
@@ -22,25 +20,21 @@
 #include <Adafruit_SSD1306.h>
 #include <Bounce2.h>
 #include <EEPROM.h>
-#pragma GCC diagnostic pop
 
 #include "bitmap.h"
 #include "global.h"
+
+#include "server.h"
 #include "renderer.h"
 #include "TouchButton.h"
 #include "elapsedMillis.h"
 
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET -1    // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define Threshold 40 /* Greater the value, more the sensitivity */
 TouchButton touchButton(Threshold);
 
 // variabls for blinking an LED with Millis
-const int led = 2;                // ESP32 Pin to which onboard LED is connected
 unsigned long previousMillis = 0; // will store last time LED was updated
 const long interval = 300;        // interval at which to blink (milliseconds)
 int ledState = LOW;               // ledState used to set the LED
@@ -48,14 +42,7 @@ int ledState = LOW;               // ledState used to set the LED
 bool uploadMode = false;
 bool latched = false;
 bool running = false;
-
-enum class RenderMode : uint8_t
-{
-  Text = 0,
-  TextAndBitmap = 1,
-  TextRain = 2,
-  END = 3,
-};
+bool connected = false;
 
 RenderMode mode = RenderMode::TextAndBitmap;
 
@@ -63,35 +50,8 @@ AsyncWebServer server(80);
 
 String payload;
 elapsedMillis sleepTimer;
-
-const uint8_t SENTINEL_VALUE = 42;
-#define SENTINEL_OFFSET 0
-#define MSG_OFFSET 10
-#define MODE_OFFSET 1
-
-const char *PARAM_INPUT_1 = "input1";
-const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html><head>
-  <title>ESP Input Form</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head><body>
-  <form action="/set">
-    Message: <textarea type="text" name="input1"></textarea>
-    <input type="submit" value="Submit">
-  </form>
-  <form action="/setMode">
-    Mode: <select name="input1">
-    <option value="0">Text</option>
-    <option value="1">Text and bitmap</option>
-    <option value="2">Text and rain</option>
-    </select>
-    <input type="submit" value="Submit">
-  </form>
-  <a href="/run">Leave upload mode</a>
-</body></html>)rawliteral";
-
-
 Renderer *renderer;
+
 void setRenderer(RenderMode newMode)
 {
   mode = newMode;
@@ -172,12 +132,11 @@ void initDisplay()
   display.display();
 }
 
-bool connected = false;
 void setup(void)
 {
   running = false;
   connected = false;
-  pinMode(led, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
   EEPROM.begin(512);
 
   touchButton.attach(T3);
@@ -192,52 +151,7 @@ void setup(void)
   WiFi.mode(WIFI_STA);
   WiFi.begin(SSID, PASSWORD);
 
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send_P(200, "text/html", index_html); });
-  server.on("/run", HTTP_GET, [](AsyncWebServerRequest *request)
-            { 
-    uploadMode = false;
-        digitalWrite(led, LOW);
-        pullMessage();
-        request->redirect(F("/")); });
-  server.on("/setMode", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    if (request->hasParam(PARAM_INPUT_1))
-    {
-      int i = request->getParam(PARAM_INPUT_1)->value().toInt();
-      if (i >= 0 && i < (int)RenderMode::END)
-      {
-        RenderMode newMode = static_cast<RenderMode>((uint8_t)i);
-
-        EEPROM.writeByte(MODE_OFFSET, (uint8_t)newMode);
-        EEPROM.commit();
-        setRenderer(newMode);
-        request->send(200, "text/html", "Set mode to " + String((uint8_t)newMode));
-        Serial.println("Set mode to " + String((uint8_t)newMode));
-      }
-      else
-      {
-        request->send(200, "text/html", "Missing data.<br><a href=\"/\">Return to Home Page</a>");
-      }
-    }
-      else request->send(200, "text/html", "Missing data.<br><a href=\"/\">Return to Home Page</a>"); });
-
-  server.on("/set", HTTP_GET, [](AsyncWebServerRequest *request)
-            {
-    String inputMessage;
-    // GET input1 value on <ESP_IP>/set?input1=<inputMessage>
-    if (request->hasParam(PARAM_INPUT_1))
-    {
-      inputMessage = request->getParam(PARAM_INPUT_1)->value();
-      EEPROM.writeString(MSG_OFFSET, inputMessage);
-      EEPROM.writeByte(SENTINEL_OFFSET, SENTINEL_VALUE);
-      EEPROM.commit();
-
-      Serial.println(inputMessage);
-      request->send(200, "text/html", "Set msg to '" + inputMessage + "'<br><a href=\"/\">Return to Home Page</a><br><a href=\"/run\">Leave upload mode</a>");
-    }
-    else
-      request->send(200, "text/html", "Missing data.<br><a href=\"/\">Return to Home Page</a>"); });
+  setupServer();
 
   uploadMode = false;
   latched = false;
@@ -289,7 +203,7 @@ void loop(void)
     // if the LED is off turn it on and vice-versa:
     ledState = not(ledState);
     // set the LED with the ledState of the variable:
-    digitalWrite(led, ledState);
+    digitalWrite(LED_PIN, ledState);
   }
 
   if (!uploadMode)
@@ -328,7 +242,7 @@ void loop(void)
     uploadMode = !uploadMode;
     if (!uploadMode)
     {
-      digitalWrite(led, LOW);
+      digitalWrite(LED_PIN, LOW);
       pullMessage();
     }
   }
