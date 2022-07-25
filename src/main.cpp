@@ -18,8 +18,9 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <HTTPClient.h>
 #include <Bounce2.h>
+#include <EEPROM.h>
+#include "bitmap.h"
 
 class TouchButton : public Bounce2::Button
 {
@@ -27,8 +28,9 @@ public:
   TouchButton(touch_value_t threshold) : _threshold(threshold)
   {
   }
-  void reset() {
-     stateChangeLastTime = millis();
+  void reset()
+  {
+    stateChangeLastTime = millis();
   }
 
 protected:
@@ -56,6 +58,14 @@ int ledState = LOW;               // ledState used to set the LED
 bool uploadMode = false;
 bool latched = false;
 bool running = false;
+
+enum class RenderMode : uint8_t {
+  Text = 0,
+  TextAndBitmap = 1,
+  TextRain = 2,
+};
+
+RenderMode mode = RenderMode::TextAndBitmap;
 
 AsyncWebServer server(80);
 
@@ -140,34 +150,56 @@ public:
 };
 elapsedMillis sleepTimer;
 
+const uint8_t SENTINEL_VALUE = 42;
+#define SENTINEL_OFFSET 0
+#define MSG_OFFSET 10
+
+const char *PARAM_INPUT_1 = "input1";
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML><html><head>
+  <title>ESP Input Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head><body>
+  <form action="/set">
+    Message: <textarea type="text" name="input1"/>
+    <input type="submit" value="Submit">
+  </form>
+  <a href="/run">Leave upload mode</a>
+</body></html>)rawliteral";
+
 void pullMessage()
 {
-  HTTPClient http;
-  http.begin("https://theor.github.io/hermes/content.txt");
-  int httpResponseCode = http.GET();
   display.ssd1306_command(SSD1306_DISPLAYON);
   display.setFont(nullptr);
   display.setTextColor(WHITE, BLACK);
   display.clearDisplay();
   display.setCursor(0, 0);
-  if (httpResponseCode > 0)
-  {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    String payload = http.getString();
-    Serial.println(payload);
 
-    delay(100);
-    display.println(payload);
-    display.display();
-  }
+  Serial.print("eeprom size:");
+  Serial.println(EEPROM.length());
+  String payload;
+  if (EEPROM.readByte(SENTINEL_OFFSET) != SENTINEL_VALUE)
+    payload = F("No data");
   else
-  {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
+    payload = EEPROM.readString(MSG_OFFSET);
+  if (payload.length() == 0)
+    payload = F("No message");
+  Serial.println(payload);
+
+
+  switch(mode) {
+    case RenderMode::Text:
+      display.println(payload);
+      display.display();
+      break;
+    case RenderMode::TextAndBitmap:
+      display.println(payload);
+      display.drawBitmap(0, 128-48, epd_bitmap_et, 64,47, WHITE);
+      display.display();
+      break;
   }
-  // Free resources
-  http.end();
+
+  
 }
 void callback()
 {
@@ -206,6 +238,7 @@ void setup(void)
 {
   running = false;
   pinMode(led, OUTPUT);
+  EEPROM.begin(512);
 
   touchButton.attach(T3);
   touchButton.interval(50); // interval in ms
@@ -214,10 +247,10 @@ void setup(void)
   Serial.begin(115200);
 
   initDisplay();
+  pullMessage();
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(SSID, PASSWORD);
-  Serial.println("");
 
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED)
@@ -231,15 +264,37 @@ void setup(void)
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  pullMessage();
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(200, "text/plain", "Hi! I am ESP32."); });
+            { request->send_P(200, "text/html", index_html); });
+  server.on("/run", HTTP_GET, [](AsyncWebServerRequest *request)
+  { 
+    uploadMode = false;
+        digitalWrite(led, LOW);
+        pullMessage();
+        request->redirect(F("/"));
+  });
+  server.on("/set", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/set?input1=<inputMessage>
+    if (request->hasParam(PARAM_INPUT_1))
+    {
+      inputMessage = request->getParam(PARAM_INPUT_1)->value();
+      EEPROM.writeString(MSG_OFFSET, inputMessage);
+      EEPROM.writeByte(SENTINEL_OFFSET, SENTINEL_VALUE);
+      EEPROM.commit();
+
+      Serial.println(inputMessage);
+      request->send(200, "text/html", "Set msg to '" + inputMessage + "'<br><a href=\"/\">Return to Home Page</a><br><a href=\"/run\">Leave upload mode</a>");
+    }
+    else
+      request->send(200, "text/html", "Missing data.<br><a href=\"/\">Return to Home Page</a>"); });
 
   AsyncElegantOTA.begin(&server); // Start ElegantOTA
   server.begin();
   Serial.println("HTTP server started");
-  
+
   uploadMode = false;
   latched = false;
   running = true;
@@ -248,7 +303,7 @@ void setup(void)
 
 void loop(void)
 {
-  if(!running)
+  if (!running)
     return;
   // loop to blink without delay
   unsigned long currentMillis = millis();
@@ -288,7 +343,9 @@ void loop(void)
 
       esp_deep_sleep_start();
     }
-  } else {
+  }
+  else
+  {
     sleepTimer = 0;
   }
 
@@ -304,7 +361,8 @@ void loop(void)
   {
     latched = true;
     uploadMode = !uploadMode;
-    if(!uploadMode) {
+    if (!uploadMode)
+    {
       digitalWrite(led, LOW);
       pullMessage();
     }
