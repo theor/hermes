@@ -218,7 +218,7 @@ static const unsigned char PROGMEM logo_bmp[] =
 	0x0e, 0x00, 0x04, 0x00};
 #define XPOS   0 // Indexes into the 'icons' array in function below
 #define YPOS   1
-#define DELTAY 1
+#define DELTAY 2
 class TextRainRenderer : public Renderer
 {
 protected:
@@ -234,7 +234,7 @@ public:
     {
       icons[f][XPOS] = random(1 - LOGO_WIDTH, display.width());
       icons[f][YPOS] = -LOGO_HEIGHT;
-      icons[f][DELTAY] = random(1, 6);
+      icons[f][DELTAY] = random(2, 6);
     }
   }
   virtual void update()
