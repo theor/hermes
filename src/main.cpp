@@ -214,10 +214,10 @@ public:
 #define LOGO_HEIGHT 10
 #define LOGO_WIDTH 11
 static const unsigned char PROGMEM logo_bmp[] =
-    {0x7b, 0xc0, 0xff, 0xe0, 0xff, 0xe0, 0xfe, 0x60, 0xff, 0xe0, 0x7f, 0xc0, 0x3f, 0x80, 0x1f, 0x00, 
-	0x0e, 0x00, 0x04, 0x00};
-#define XPOS   0 // Indexes into the 'icons' array in function below
-#define YPOS   1
+    {0x7b, 0xc0, 0xff, 0xe0, 0xff, 0xe0, 0xfe, 0x60, 0xff, 0xe0, 0x7f, 0xc0, 0x3f, 0x80, 0x1f, 0x00,
+     0x0e, 0x00, 0x04, 0x00};
+#define XPOS 0 // Indexes into the 'icons' array in function below
+#define YPOS 1
 #define DELTAY 2
 class TextRainRenderer : public Renderer
 {
@@ -239,21 +239,21 @@ public:
   }
   virtual void update()
   {
-    if(_elapsed < 100)
+    if (_elapsed < 33)
       return;
-      Serial.println("update");
     _elapsed = 0;
     display.clearDisplay();
     display.setCursor(0, 0);
     display.println(payload);
 
-
-// Draw each snowflake:
-    for(int8_t f=0; f< NUMFLAKES; f++) {
+    // Draw each snowflake:
+    for (int8_t f = 0; f < NUMFLAKES; f++)
+    {
       display.drawBitmap(icons[f][XPOS], icons[f][YPOS], logo_bmp, LOGO_WIDTH, LOGO_HEIGHT, WHITE);
     }
-    for(int8_t f=0; f< NUMFLAKES; f++) {
-      
+    for (int8_t f = 0; f < NUMFLAKES; f++)
+    {
+
       if (icons[f][YPOS] < 128)
         icons[f][YPOS] += icons[f][DELTAY];
       // If snowflake is off the bottom of the screen...
@@ -349,9 +349,11 @@ void initDisplay()
   display.display();
 }
 
+bool connected = false;
 void setup(void)
 {
   running = false;
+  connected = false;
   pinMode(led, OUTPUT);
   EEPROM.begin(512);
 
@@ -366,18 +368,6 @@ void setup(void)
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(SSID, PASSWORD);
-
-  // Wait for connection
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(SSID);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send_P(200, "text/html", index_html); });
@@ -426,10 +416,6 @@ void setup(void)
     else
       request->send(200, "text/html", "Missing data.<br><a href=\"/\">Return to Home Page</a>"); });
 
-  AsyncElegantOTA.begin(&server); // Start ElegantOTA
-  server.begin();
-  Serial.println("HTTP server started");
-
   uploadMode = false;
   latched = false;
   running = true;
@@ -438,6 +424,20 @@ void setup(void)
 
 void loop(void)
 {
+
+  // Wait for connection
+  if (!connected && WiFi.status() == WL_CONNECTED)
+  {
+    connected = true;
+    Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(SSID);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    AsyncElegantOTA.begin(&server); // Start ElegantOTA
+    server.begin();
+    Serial.println("HTTP server started");
+  }
   if (!running)
     return;
   // loop to blink without delay
