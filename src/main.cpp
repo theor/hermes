@@ -26,6 +26,7 @@
 
 #include "server.h"
 #include "renderer.h"
+#include "renderers/plant.h"
 #include "TouchButton.h"
 #include "elapsedMillis.h"
 
@@ -70,6 +71,9 @@ void setRenderer(RenderMode newMode)
     break;
   case RenderMode::TextAndBitmap:
     renderer = new TextRenderer(true);
+    break;
+  case RenderMode::Plant:
+    renderer = new PlantRenderer();
     break;
   default:
     renderer = new TextRenderer(false);
@@ -152,8 +156,6 @@ void setup(void)
   initDisplay();
   pullMessage();
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(SSID, PASSWORD);
 
   setupServer();
 
@@ -162,24 +164,13 @@ void setup(void)
   running = true;
   touchButton.reset();
   uploadButton.reset();
+
+  // disableCore0WDT();
+  // disableCore1WDT();
 }
 
 void loop(void)
 {
-
-  // Wait for connection
-  if (!connected && WiFi.status() == WL_CONNECTED)
-  {
-    connected = true;
-    Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(SSID);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    AsyncElegantOTA.begin(&server); // Start ElegantOTA
-    server.begin();
-    Serial.println("HTTP server started");
-  }
   if (!running)
     return;
   // loop to blink without delay
@@ -194,7 +185,6 @@ void loop(void)
     display.clearDisplay();
     display.println(F("Upload"));
     display.print(WiFi.localIP());
-    display.println(F("/update"));
     display.display();
   }
   else
@@ -224,6 +214,7 @@ void loop(void)
       display.clearDisplay();
       display.ssd1306_command(SSD1306_DISPLAYOFF);
 
+      // touchAttachInterrupt(T2, callback, Threshold);
       touchAttachInterrupt(T3, callback, Threshold);
       esp_sleep_enable_touchpad_wakeup();
 
@@ -255,7 +246,28 @@ void loop(void)
     if (!uploadMode)
     {
       digitalWrite(LED_PIN, LOW);
+      server.end();
+      WiFi.mode(WIFI_OFF);
       pullMessage();
+    }
+    else
+    {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(SSID, PASSWORD);
+  while(WiFi.status() != WL_CONNECTED)
+    {
+      Serial.print('.');
+      delay(500);
+      }
+
+      server.begin(); 
+      Serial.println("");
+    Serial.print("Connected to ");
+    Serial.println(SSID);
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    AsyncElegantOTA.begin(&server); // Start ElegantOTA
+    Serial.println("HTTP server started");
     }
   }
 }

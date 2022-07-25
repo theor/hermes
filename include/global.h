@@ -31,5 +31,6 @@ enum class RenderMode : uint8_t
   Text = 0,
   TextAndBitmap = 1,
   TextRain = 2,
-  END = 3,
+  Plant = 3,
+  END = 4,
 };

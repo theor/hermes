@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
 #include "global.h"
@@ -56,11 +58,6 @@ public:
 };
 
 #define NUMFLAKES 10
-#define LOGO_HEIGHT 10
-#define LOGO_WIDTH 11
-static const unsigned char PROGMEM logo_bmp[] =
-    {0x7b, 0xc0, 0xff, 0xe0, 0xff, 0xe0, 0xfe, 0x60, 0xff, 0xe0, 0x7f, 0xc0, 0x3f, 0x80, 0x1f, 0x00,
-     0x0e, 0x00, 0x04, 0x00};
 #define XPOS 0 // Indexes into the 'icons' array in function below
 #define YPOS 1
 #define DELTAY 2
@@ -81,7 +78,7 @@ public:
     // Initialize 'snowflake' positions
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
-      icons[f][XPOS] = random(1 - LOGO_WIDTH, display.width() - LOGO_WIDTH);
+      icons[f][XPOS] = random(1 - HEART_WIDTH, display.width() - HEART_WIDTH);
       icons[f][YPOS] = display.height();
       icons[f][DELTAY] = random(2, 6);
     }
@@ -98,12 +95,12 @@ public:
     // Draw each snowflake:
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
-      display.drawBitmap(icons[f][XPOS], icons[f][YPOS], logo_bmp, LOGO_WIDTH, LOGO_HEIGHT, WHITE);
+      display.drawBitmap(icons[f][XPOS], icons[f][YPOS], bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
     }
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
 
-      if (icons[f][YPOS] > -LOGO_HEIGHT)
+      if (icons[f][YPOS] > -HEART_HEIGHT)
       {
         icons[f][YPOS] -= icons[f][DELTAY];
         icons[f][XPOS] += random(-1, 1);
@@ -111,8 +108,8 @@ public:
       // If snowflake is off the bottom of the screen...
       // if (icons[f][YPOS] >= 128) {
       //   // Reinitialize to a random position, just off the top
-      //   icons[f][XPOS]   = random(1 - LOGO_WIDTH, 64);
-      //   icons[f][YPOS]   = -LOGO_HEIGHT;
+      //   icons[f][XPOS]   = random(1 - HEART_WIDTH, 64);
+      //   icons[f][YPOS]   = -HEART_HEIGHT;
       //   icons[f][DELTAY] = random(1, 6);
       // }
     }
@@ -124,7 +121,7 @@ public:
         if (icons[f][YPOS] < 0)
         {
           //   // Reinitialize to a random position, just off the top
-          icons[f][XPOS] = random(1, display.width() - LOGO_WIDTH);
+          icons[f][XPOS] = random(1, display.width() - HEART_WIDTH);
           icons[f][YPOS] = display.height();
           icons[f][DELTAY] = random(1, 6);
           break;
