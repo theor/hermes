@@ -59,10 +59,12 @@ bool uploadMode = false;
 bool latched = false;
 bool running = false;
 
-enum class RenderMode : uint8_t {
+enum class RenderMode : uint8_t
+{
   Text = 0,
   TextAndBitmap = 1,
   TextRain = 2,
+  END = 3,
 };
 
 RenderMode mode = RenderMode::TextAndBitmap;
@@ -148,11 +150,13 @@ public:
     return r;
   }
 };
+String payload;
 elapsedMillis sleepTimer;
 
 const uint8_t SENTINEL_VALUE = 42;
 #define SENTINEL_OFFSET 0
 #define MSG_OFFSET 10
+#define MODE_OFFSET 1
 
 const char *PARAM_INPUT_1 = "input1";
 const char index_html[] PROGMEM = R"rawliteral(
@@ -161,45 +165,156 @@ const char index_html[] PROGMEM = R"rawliteral(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   </head><body>
   <form action="/set">
-    Message: <textarea type="text" name="input1"/>
+    Message: <textarea type="text" name="input1"></textarea>
+    <input type="submit" value="Submit">
+  </form>
+  <form action="/setMode">
+    Mode: <select name="input1">
+    <option value="0">Text</option>
+    <option value="1">Text and bitmap</option>
+    <option value="2">Text and rain</option>
+    </select>
     <input type="submit" value="Submit">
   </form>
   <a href="/run">Leave upload mode</a>
 </body></html>)rawliteral";
+
+class Renderer
+{
+public:
+  virtual void start() = 0;
+  virtual void update() {}
+  virtual void stop() {}
+};
+
+class TextRenderer : public Renderer
+{
+protected:
+  bool _renderBitmap;
+
+public:
+  TextRenderer(bool renderBitmap) : _renderBitmap(renderBitmap)
+  {
+    Serial.print("CTOR " + String(renderBitmap));
+    Serial.println(_renderBitmap);
+  }
+  virtual void start()
+  {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(payload);
+    // Serial.println("Text bitmap=" + String(_renderBitmap ? "true" : "false"));
+    if (this->_renderBitmap)
+      display.drawBitmap(0, 128 - 48, epd_bitmap_et, 64, 47, WHITE);
+    display.display();
+  }
+};
+
+#define NUMFLAKES 10
+#define LOGO_HEIGHT 10
+#define LOGO_WIDTH 11
+static const unsigned char PROGMEM logo_bmp[] =
+    {0x7b, 0xc0, 0xff, 0xe0, 0xff, 0xe0, 0xfe, 0x60, 0xff, 0xe0, 0x7f, 0xc0, 0x3f, 0x80, 0x1f, 0x00, 
+	0x0e, 0x00, 0x04, 0x00};
+#define XPOS   0 // Indexes into the 'icons' array in function below
+#define YPOS   1
+#define DELTAY 1
+class TextRainRenderer : public Renderer
+{
+protected:
+  int16_t icons[NUMFLAKES][3];
+  elapsedMillis _elapsed;
+
+public:
+  TextRainRenderer() {}
+  virtual void start()
+  {
+    // Initialize 'snowflake' positions
+    for (int8_t f = 0; f < NUMFLAKES; f++)
+    {
+      icons[f][XPOS] = random(1 - LOGO_WIDTH, display.width());
+      icons[f][YPOS] = -LOGO_HEIGHT;
+      icons[f][DELTAY] = random(1, 6);
+    }
+  }
+  virtual void update()
+  {
+    if(_elapsed < 100)
+      return;
+      Serial.println("update");
+    _elapsed = 0;
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(payload);
+
+
+// Draw each snowflake:
+    for(int8_t f=0; f< NUMFLAKES; f++) {
+      display.drawBitmap(icons[f][XPOS], icons[f][YPOS], logo_bmp, LOGO_WIDTH, LOGO_HEIGHT, WHITE);
+    }
+    for(int8_t f=0; f< NUMFLAKES; f++) {
+      
+      if (icons[f][YPOS] < 128)
+        icons[f][YPOS] += icons[f][DELTAY];
+      // If snowflake is off the bottom of the screen...
+      // if (icons[f][YPOS] >= 128) {
+      //   // Reinitialize to a random position, just off the top
+      //   icons[f][XPOS]   = random(1 - LOGO_WIDTH, 64);
+      //   icons[f][YPOS]   = -LOGO_HEIGHT;
+      //   icons[f][DELTAY] = random(1, 6);
+      // }
+    }
+    display.display();
+  }
+};
+
+Renderer *renderer;
+void setRenderer(RenderMode newMode)
+{
+  mode = newMode;
+  if (renderer)
+  {
+    renderer->stop();
+    delete renderer;
+    renderer = nullptr;
+  }
+  Serial.print("CURRENT MODE");
+  Serial.println((int)mode);
+  switch (mode)
+  {
+  case RenderMode::TextRain:
+    renderer = new TextRainRenderer();
+    break;
+  case RenderMode::TextAndBitmap:
+    renderer = new TextRenderer(true);
+    break;
+  default:
+    renderer = new TextRenderer(false);
+    break;
+  }
+  renderer->start();
+}
 
 void pullMessage()
 {
   display.ssd1306_command(SSD1306_DISPLAYON);
   display.setFont(nullptr);
   display.setTextColor(WHITE, BLACK);
-  display.clearDisplay();
-  display.setCursor(0, 0);
 
   Serial.print("eeprom size:");
   Serial.println(EEPROM.length());
-  String payload;
   if (EEPROM.readByte(SENTINEL_OFFSET) != SENTINEL_VALUE)
     payload = F("No data");
   else
+  {
     payload = EEPROM.readString(MSG_OFFSET);
+    mode = (RenderMode)EEPROM.readByte(MODE_OFFSET);
+  }
   if (payload.length() == 0)
     payload = F("No message");
-  Serial.println(payload);
+  Serial.println(payload + " " + String((int)mode));
 
-
-  switch(mode) {
-    case RenderMode::Text:
-      display.println(payload);
-      display.display();
-      break;
-    case RenderMode::TextAndBitmap:
-      display.println(payload);
-      display.drawBitmap(0, 128-48, epd_bitmap_et, 64,47, WHITE);
-      display.display();
-      break;
-  }
-
-  
+  setRenderer(mode);
 }
 void callback()
 {
@@ -264,16 +379,36 @@ void setup(void)
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send_P(200, "text/html", index_html); });
   server.on("/run", HTTP_GET, [](AsyncWebServerRequest *request)
-  { 
+            { 
     uploadMode = false;
         digitalWrite(led, LOW);
         pullMessage();
-        request->redirect(F("/"));
-  });
+        request->redirect(F("/")); });
+  server.on("/setMode", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+    if (request->hasParam(PARAM_INPUT_1))
+    {
+      int i = request->getParam(PARAM_INPUT_1)->value().toInt();
+      if (i >= 0 && i < (int)RenderMode::END)
+      {
+        RenderMode newMode = static_cast<RenderMode>((uint8_t)i);
+
+        EEPROM.writeByte(MODE_OFFSET, (uint8_t)newMode);
+        EEPROM.commit();
+        setRenderer(newMode);
+        request->send(200, "text/html", "Set mode to " + String((uint8_t)newMode));
+        Serial.println("Set mode to " + String((uint8_t)newMode));
+      }
+      else
+      {
+        request->send(200, "text/html", "Missing data.<br><a href=\"/\">Return to Home Page</a>");
+      }
+    }
+      else request->send(200, "text/html", "Missing data.<br><a href=\"/\">Return to Home Page</a>"); });
+
   server.on("/set", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     String inputMessage;
@@ -317,6 +452,11 @@ void loop(void)
     display.print(WiFi.localIP());
     display.println(F("/update"));
     display.display();
+  }
+  else
+  {
+    if (renderer)
+      renderer->update();
   }
 
   if (uploadMode && currentMillis - previousMillis >= interval)
@@ -368,23 +508,3 @@ void loop(void)
     }
   }
 }
-
-// #define LOGO_HEIGHT 16
-// #define LOGO_WIDTH 16
-// static const unsigned char PROGMEM logo_bmp[] =
-//     {B00000000, B11000000,
-//      B00000001, B11000000,
-//      B00000001, B11000000,
-//      B00000011, B11100000,
-//      B11110011, B11100000,
-//      B11111110, B11111000,
-//      B01111110, B11111111,
-//      B00110011, B10011111,
-//      B00011111, B11111100,
-//      B00001101, B01110000,
-//      B00011011, B10100000,
-//      B00111111, B11100000,
-//      B00111111, B11110000,
-//      B01111100, B11110000,
-//      B01110000, B01110000,
-//      B00000000, B00110000};
