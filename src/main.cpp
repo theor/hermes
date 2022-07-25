@@ -8,38 +8,28 @@
   https://github.com/ayushsharma82/AsyncElegantOTA
 */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 #include <Arduino.h>
-#include <WiFi.h>
+#include <Wire.h>
 #include <AsyncTCP.h>
+#include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 #include "WifiConfig.h"
 #include <SPI.h>
-#include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Bounce2.h>
 #include <EEPROM.h>
+#pragma GCC diagnostic pop
+
 #include "bitmap.h"
+#include "global.h"
+#include "renderer.h"
+#include "TouchButton.h"
+#include "elapsedMillis.h"
 
-class TouchButton : public Bounce2::Button
-{
-public:
-  TouchButton(touch_value_t threshold) : _threshold(threshold)
-  {
-  }
-  void reset()
-  {
-    stateChangeLastTime = millis();
-  }
-
-protected:
-  touch_value_t _threshold;
-  virtual void setPinMode(int pin, int mode)
-  { /* do nothing */
-  }
-  virtual bool readCurrentState() { return touchRead(pin) < _threshold; }
-};
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -71,85 +61,6 @@ RenderMode mode = RenderMode::TextAndBitmap;
 
 AsyncWebServer server(80);
 
-class elapsedMillis
-{
-private:
-  unsigned long ms;
-
-public:
-  elapsedMillis(void) { ms = millis(); }
-  elapsedMillis(unsigned long val) { ms = millis() - val; }
-  elapsedMillis(const elapsedMillis &orig) { ms = orig.ms; }
-  operator unsigned long() const { return millis() - ms; }
-  elapsedMillis &operator=(const elapsedMillis &rhs)
-  {
-    ms = rhs.ms;
-    return *this;
-  }
-  elapsedMillis &operator=(unsigned long val)
-  {
-    ms = millis() - val;
-    return *this;
-  }
-  elapsedMillis &operator-=(unsigned long val)
-  {
-    ms += val;
-    return *this;
-  }
-  elapsedMillis &operator+=(unsigned long val)
-  {
-    ms -= val;
-    return *this;
-  }
-  elapsedMillis operator-(int val) const
-  {
-    elapsedMillis r(*this);
-    r.ms += val;
-    return r;
-  }
-  elapsedMillis operator-(unsigned int val) const
-  {
-    elapsedMillis r(*this);
-    r.ms += val;
-    return r;
-  }
-  elapsedMillis operator-(long val) const
-  {
-    elapsedMillis r(*this);
-    r.ms += val;
-    return r;
-  }
-  elapsedMillis operator-(unsigned long val) const
-  {
-    elapsedMillis r(*this);
-    r.ms += val;
-    return r;
-  }
-  elapsedMillis operator+(int val) const
-  {
-    elapsedMillis r(*this);
-    r.ms -= val;
-    return r;
-  }
-  elapsedMillis operator+(unsigned int val) const
-  {
-    elapsedMillis r(*this);
-    r.ms -= val;
-    return r;
-  }
-  elapsedMillis operator+(long val) const
-  {
-    elapsedMillis r(*this);
-    r.ms -= val;
-    return r;
-  }
-  elapsedMillis operator+(unsigned long val) const
-  {
-    elapsedMillis r(*this);
-    r.ms -= val;
-    return r;
-  }
-};
 String payload;
 elapsedMillis sleepTimer;
 
@@ -179,95 +90,6 @@ const char index_html[] PROGMEM = R"rawliteral(
   <a href="/run">Leave upload mode</a>
 </body></html>)rawliteral";
 
-class Renderer
-{
-public:
-  virtual void start() = 0;
-  virtual void press(bool pressed) { if(pressed) this->start(); }
-  virtual void update() {}
-  virtual void stop() {}
-};
-
-class TextRenderer : public Renderer
-{
-protected:
-  bool _renderBitmap;
-
-public:
-  TextRenderer(bool renderBitmap) : _renderBitmap(renderBitmap)
-  {
-    Serial.print("CTOR " + String(renderBitmap));
-    Serial.println(_renderBitmap);
-  }
-  virtual void start()
-  {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(payload);
-    // Serial.println("Text bitmap=" + String(_renderBitmap ? "true" : "false"));
-    if (this->_renderBitmap)
-      display.drawBitmap(0, 128 - 48, epd_bitmap_et, 64, 47, WHITE);
-    display.display();
-  }
-};
-
-#define NUMFLAKES 10
-#define LOGO_HEIGHT 10
-#define LOGO_WIDTH 11
-static const unsigned char PROGMEM logo_bmp[] =
-    {0x7b, 0xc0, 0xff, 0xe0, 0xff, 0xe0, 0xfe, 0x60, 0xff, 0xe0, 0x7f, 0xc0, 0x3f, 0x80, 0x1f, 0x00,
-     0x0e, 0x00, 0x04, 0x00};
-#define XPOS 0 // Indexes into the 'icons' array in function below
-#define YPOS 1
-#define DELTAY 2
-class TextRainRenderer : public Renderer
-{
-protected:
-  int16_t icons[NUMFLAKES][3];
-  elapsedMillis _elapsed;
-
-public:
-  TextRainRenderer() {}
-  virtual void start()
-  {
-    // Initialize 'snowflake' positions
-    for (int8_t f = 0; f < NUMFLAKES; f++)
-    {
-      icons[f][XPOS] = random(1 - LOGO_WIDTH, display.width());
-      icons[f][YPOS] = -LOGO_HEIGHT;
-      icons[f][DELTAY] = random(2, 6);
-    }
-  }
-  virtual void update()
-  {
-    if (_elapsed < 33)
-      return;
-    _elapsed = 0;
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(payload);
-
-    // Draw each snowflake:
-    for (int8_t f = 0; f < NUMFLAKES; f++)
-    {
-      display.drawBitmap(icons[f][XPOS], icons[f][YPOS], logo_bmp, LOGO_WIDTH, LOGO_HEIGHT, WHITE);
-    }
-    for (int8_t f = 0; f < NUMFLAKES; f++)
-    {
-
-      if (icons[f][YPOS] < 128)
-        icons[f][YPOS] += icons[f][DELTAY];
-      // If snowflake is off the bottom of the screen...
-      // if (icons[f][YPOS] >= 128) {
-      //   // Reinitialize to a random position, just off the top
-      //   icons[f][XPOS]   = random(1 - LOGO_WIDTH, 64);
-      //   icons[f][YPOS]   = -LOGO_HEIGHT;
-      //   icons[f][DELTAY] = random(1, 6);
-      // }
-    }
-    display.display();
-  }
-};
 
 Renderer *renderer;
 void setRenderer(RenderMode newMode)
