@@ -29,10 +29,10 @@
 #include "TouchButton.h"
 #include "elapsedMillis.h"
 
-
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 TouchButton touchButton(Threshold);
+TouchButton uploadButton(Threshold);
 
 // variabls for blinking an LED with Millis
 unsigned long previousMillis = 0; // will store last time LED was updated
@@ -143,6 +143,10 @@ void setup(void)
   touchButton.interval(50); // interval in ms
   touchButton.reset();
 
+  uploadButton.attach(T4);
+  uploadButton.interval(50); // interval in ms
+  uploadButton.reset();
+
   Serial.begin(115200);
 
   initDisplay();
@@ -157,6 +161,7 @@ void setup(void)
   latched = false;
   running = true;
   touchButton.reset();
+  uploadButton.reset();
 }
 
 void loop(void)
@@ -179,6 +184,8 @@ void loop(void)
     return;
   // loop to blink without delay
   unsigned long currentMillis = millis();
+  touchButton.update();
+  bool touched = touchButton.read();
 
   if (uploadMode)
   {
@@ -193,7 +200,7 @@ void loop(void)
   else
   {
     if (renderer)
-      renderer->update();
+      renderer->update(touched);
   }
 
   if (uploadMode && currentMillis - previousMillis >= interval)
@@ -208,6 +215,8 @@ void loop(void)
 
   if (!uploadMode)
   {
+    if (renderer && renderer->sleepTimerResetRequested())
+      sleepTimer = 0;
     if (sleepTimer > 10000)
     {
       // Go to sleep now
@@ -225,18 +234,21 @@ void loop(void)
   {
     sleepTimer = 0;
   }
-
-  touchButton.update();
-  bool touched = touchButton.read();
   if (touchButton.changed())
   {
-    if(renderer)
+    if (renderer)
       renderer->press(touched);
-    Serial.println(touched);
-    if (!touched)
+  }
+
+  uploadButton.update();
+  bool uploadTouched = uploadButton.read();
+  if (uploadButton.changed())
+  {
+    Serial.println(uploadTouched);
+    if (!uploadTouched)
       latched = false;
   }
-  if (!latched && touched && touchButton.currentDuration() > 2000)
+  if (!latched && uploadTouched && uploadButton.currentDuration() > 1000)
   {
     latched = true;
     uploadMode = !uploadMode;

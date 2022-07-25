@@ -23,6 +23,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     <input type="submit" value="Submit">
   </form>
   <a href="/run">Leave upload mode</a>
+  <a href="/update">OTA page</a>
 </body></html>)rawliteral";
 
 

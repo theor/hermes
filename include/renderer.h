@@ -7,10 +7,29 @@ class Renderer
 {
 public:
   virtual void start() = 0;
-  virtual void press(bool pressed) { if(pressed) this->start(); }
-  virtual void update() {}
+  virtual void press(bool pressed)
+  {
+    if (pressed)
+      this->start();
+  }
+  virtual void update(bool buttonHeld) {}
   virtual void stop() {}
   virtual ~Renderer() {}
+  bool sleepTimerResetRequested()
+  {
+    bool val = _requestSleepTimerReset;
+    _requestSleepTimerReset = false;
+    return val;
+  }
+
+protected:
+  void resetSleepTimer()
+  {
+    _requestSleepTimerReset = true;
+  }
+
+private:
+  bool _requestSleepTimerReset;
 };
 
 class TextRenderer : public Renderer
@@ -53,17 +72,21 @@ protected:
 
 public:
   TextRainRenderer() {}
+  virtual void press(bool pressed)
+  {
+    resetSleepTimer();
+  }
   virtual void start()
   {
     // Initialize 'snowflake' positions
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
-      icons[f][XPOS] = random(1 - LOGO_WIDTH, display.width());
-      icons[f][YPOS] = -LOGO_HEIGHT;
+      icons[f][XPOS] = random(1 - LOGO_WIDTH, display.width() - LOGO_WIDTH);
+      icons[f][YPOS] = display.height();
       icons[f][DELTAY] = random(2, 6);
     }
   }
-  virtual void update()
+  virtual void update(bool buttonHeld)
   {
     if (_elapsed < 33)
       return;
@@ -80,8 +103,11 @@ public:
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
 
-      if (icons[f][YPOS] < 128)
-        icons[f][YPOS] += icons[f][DELTAY];
+      if (icons[f][YPOS] > -LOGO_HEIGHT)
+      {
+        icons[f][YPOS] -= icons[f][DELTAY];
+        icons[f][XPOS] += random(-1, 1);
+      }
       // If snowflake is off the bottom of the screen...
       // if (icons[f][YPOS] >= 128) {
       //   // Reinitialize to a random position, just off the top
@@ -90,6 +116,22 @@ public:
       //   icons[f][DELTAY] = random(1, 6);
       // }
     }
+
+    if (buttonHeld)
+    {
+      for (int8_t f = 0; f < NUMFLAKES; f++)
+      {
+        if (icons[f][YPOS] < 0)
+        {
+          //   // Reinitialize to a random position, just off the top
+          icons[f][XPOS] = random(1, display.width() - LOGO_WIDTH);
+          icons[f][YPOS] = display.height();
+          icons[f][DELTAY] = random(1, 6);
+          break;
+        }
+      }
+    }
+
     display.display();
   }
 };
