@@ -183,6 +183,7 @@ class Renderer
 {
 public:
   virtual void start() = 0;
+  virtual void press(bool pressed) { if(pressed) this->start(); }
   virtual void update() {}
   virtual void stop() {}
 };
@@ -493,6 +494,8 @@ void loop(void)
   bool touched = touchButton.read();
   if (touchButton.changed())
   {
+    if(renderer)
+      renderer->press(touched);
     Serial.println(touched);
     if (!touched)
       latched = false;
