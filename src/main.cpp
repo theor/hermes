@@ -30,6 +30,10 @@
 #include "TouchButton.h"
 #include "elapsedMillis.h"
 
+#ifdef ROCKET
+#include "rocket.h"
+#endif
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 TouchButton touchButton(Threshold);
@@ -136,6 +140,24 @@ void initDisplay()
   display.display();
 }
 
+
+#ifdef ROCKET
+void rocketMode(){
+  WiFi.mode(WIFI_STA);
+      WiFi.begin(SSID, PASSWORD);
+      while (WiFi.status() != WL_CONNECTED)
+      {
+        Serial.print('.');
+        delay(500);
+      }
+      if (!rocket_init("data/sync"))
+        return;
+      for (int8_t i = 0; i < sizeof_array(s_trackNames); ++i)
+        s_tracks[i] = sync_get_track(device, s_trackNames[i]);
+}
+#endif
+
+
 void setup(void)
 {
   running = false;
@@ -156,7 +178,6 @@ void setup(void)
   initDisplay();
   pullMessage();
 
-
   setupServer();
 
   uploadMode = false;
@@ -165,8 +186,9 @@ void setup(void)
   touchButton.reset();
   uploadButton.reset();
 
-  // disableCore0WDT();
-  // disableCore1WDT();
+#ifdef ROCKET
+  rocketMode();
+#endif
 }
 
 void loop(void)
@@ -189,23 +211,23 @@ void loop(void)
   }
   else
   {
+  #ifdef ROCKET
+    if(!device) // TODO ROCKET
+  #endif
     if (renderer)
       renderer->update(touched);
   }
 
   if (uploadMode && currentMillis - previousMillis >= interval)
   {
-    // save the last time you blinked the LED
     previousMillis = currentMillis;
-    // if the LED is off turn it on and vice-versa:
     ledState = not(ledState);
-    // set the LED with the ledState of the variable:
     digitalWrite(LED_PIN, ledState);
   }
 
   if (!uploadMode)
   {
-    if (renderer && renderer->sleepTimerResetRequested())
+    if (device || (renderer && renderer->sleepTimerResetRequested()))
       sleepTimer = 0;
     if (sleepTimer > 10000)
     {
@@ -252,22 +274,43 @@ void loop(void)
     }
     else
     {
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(SSID, PASSWORD);
-  while(WiFi.status() != WL_CONNECTED)
-    {
-      Serial.print('.');
-      delay(500);
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(SSID, PASSWORD);
+      while (WiFi.status() != WL_CONNECTED)
+      {
+        Serial.print('.');
+        delay(500);
       }
 
-      server.begin(); 
+      server.begin();
       Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(SSID);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    AsyncElegantOTA.begin(&server); // Start ElegantOTA
-    Serial.println("HTTP server started");
+      Serial.print("Connected to ");
+      Serial.println(SSID);
+      Serial.print("IP address: ");
+      Serial.println(WiFi.localIP());
+      AsyncElegantOTA.begin(&server); // Start ElegantOTA
+      Serial.println("HTTP server started");
     }
   }
+
+#ifdef ROCKET
+  if (device)
+  {
+
+    float row_f;
+
+    rocket_update();
+
+    row_f = ms_to_row_f(curtime_ms, rps);
+
+    int8_t x = (int8_t)sync_get_val(s_tracks[0], row_f);
+    int8_t y = (int8_t)sync_get_val(s_tracks[1], row_f);
+    if (!uploadMode)
+    {
+      display.clearDisplay();
+      display.drawCircle(x, y, 5, WHITE);
+      display.display();
+    }
+  }
+#endif
 }

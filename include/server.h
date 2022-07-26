@@ -19,6 +19,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     <option value="0">Text</option>
     <option value="1">Text and bitmap</option>
     <option value="2">Text and rain</option>
+    <option value="3">Plant</option>
     </select>
     <input type="submit" value="Submit">
   </form>
