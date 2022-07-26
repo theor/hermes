@@ -18,9 +18,10 @@ static const char *s_trackNames[] = {
 
 static struct sync_device *device;
 static const struct sync_track *s_tracks[7];
-const float bpm = 180.0f;
-const float rpb = 8.0f;
-float rps = 24.0f; // bpm / 60.0f * rpb; <- msvc cant compute this compile time... sigh
+// const float bpm = 180.0f;
+// const float rpb = 8.0f; // row per beat
+// float rps = 24.0f; // row per second bpm / 60.0f * rpb; <- msvc cant compute this compile time... sigh
+const float rps = 10.0f;
 
 int audio_is_playing = 1;
 int curtime_ms = 0;
@@ -30,6 +31,11 @@ static struct sync_cb cb;
 #endif
 
 
+static float ms_to_row_f(int time_ms, float rps)
+{
+  const float row = rps * ((float)time_ms) * 1.0f / 1000.0f;
+  return row;
+}
 #if !defined(SYNC_PLAYER)
 
 
@@ -39,11 +45,6 @@ static int row_to_ms_round(int row, float rps)
   return (int)(floor(newtime * 1000.0f + 0.5f));
 }
 
-static float ms_to_row_f(int time_ms, float rps)
-{
-  const float row = rps * ((float)time_ms) * 1.0f / 1000.0f;
-  return row;
-}
 
 
 static int ms_to_row_round(int time_ms, float rps)
@@ -147,12 +148,12 @@ int rocket_init(const char *prefix)
 
 static int rocket_update()
 {
-  int row = 0;
 
-  if (audio_is_playing)
-    curtime_ms += 16; //...60hz or gtfo
-
+//   if (audio_is_playing)
+    // curtime_ms += 1; //...60hz or gtfo
+    // curtime_ms = curtime_ms % 300;
 #if !defined(SYNC_PLAYER)
+  int row = 0;
   row = ms_to_row_round(curtime_ms, rps);
   if (sync_update(device, row, &cb, 0))
     sync_tcp_connect(device, ROCKET_HOST_IP, SYNC_DEFAULT_PORT);

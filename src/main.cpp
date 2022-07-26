@@ -145,6 +145,7 @@ void rocketMode()
 {
   SPIFFS.begin(true);
   SPIFFS.mkdir("/data");
+#if !defined(SYNC_PLAYER)
   WiFi.mode(WIFI_STA);
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED)
@@ -152,6 +153,7 @@ void rocketMode()
     Serial.print('.');
     delay(500);
   }
+#endif
   if (!rocket_init("data/sync"))
     return;
   for (int8_t i = 0; i < sizeof_array(s_trackNames); ++i)
@@ -294,17 +296,7 @@ void loop(void)
 #ifdef ROCKET
   if (device)
   {
-
-    float row_f;
-
     rocket_update();
-
-    // if (!uploadMode)
-    // {
-    //   display.clearDisplay();
-    //   display.drawCircle(x, y, 5, WHITE);
-    //   display.display();
-    // }
   }
 #endif
 }

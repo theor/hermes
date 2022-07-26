@@ -17,7 +17,7 @@ class PlantRenderer
     : public Renderer
 {
 public:
-    virtual void press(bool pressed){}
+    virtual void press(bool pressed) {}
     virtual void start()
     {
         i = 0;
@@ -33,11 +33,10 @@ public:
         if (buttonHeld)
             resetSleepTimer();
 
+        float row_f = ms_to_row_f(curtime_ms, rps);
 
-    float row_f = ms_to_row_f(curtime_ms, rps);
-
-    int8_t x = (int8_t)sync_get_val(s_tracks[0], row_f);
-    int8_t y = (int8_t)sync_get_val(s_tracks[1], row_f);
+        int8_t x = (int8_t)sync_get_val(s_tracks[0], row_f);
+        int8_t y = (int8_t)sync_get_val(s_tracks[1], row_f);
 
         _elapsed = 0;
         display.clearDisplay();
@@ -48,13 +47,13 @@ public:
         {
             display.drawPixel(30 + stem_offsets[s % 13], 128 - 5 - s, WHITE);
         }
-        
+
         {
             uint8_t flowerFrame = (uint8_t)sync_get_val(s_tracks[3], row_f);
             if (flowerFrame > 8)
-                    flowerFrame = 8;
+                flowerFrame = 8;
             display.drawBitmap(24, 50, epd_flower_allArray[flowerFrame], 16, 16, WHITE);
-                display.drawBitmap((int8_t)sync_get_val(s_tracks[4], row_f), (int8_t)sync_get_val(s_tracks[5], row_f), bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
+            display.drawBitmap((int8_t)sync_get_val(s_tracks[4], row_f), (int8_t)sync_get_val(s_tracks[5], row_f), bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
         }
         // j++;
 
@@ -68,8 +67,8 @@ public:
         }
         for (int8_t f = 0; f < NUM_DROPS; f++)
         {
-            if (icons[f][1] == 123 && j < 500)
-                j++;
+            if (icons[f][1] == 123)
+                {curtime_ms+=160;Serial.println(curtime_ms);}
             if (icons[f][1] < 123)
                 icons[f][1] += 2;
             else
@@ -85,7 +84,6 @@ public:
 
 protected:
     uint8_t i;
-    uint16_t j;
     int16_t icons[NUM_DROPS][2];
     elapsedMillis _elapsed;
 };
