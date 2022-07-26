@@ -140,23 +140,24 @@ void initDisplay()
   display.display();
 }
 
-
 #ifdef ROCKET
-void rocketMode(){
+void rocketMode()
+{
+  SPIFFS.begin(true);
+  SPIFFS.mkdir("/data");
   WiFi.mode(WIFI_STA);
-      WiFi.begin(SSID, PASSWORD);
-      while (WiFi.status() != WL_CONNECTED)
-      {
-        Serial.print('.');
-        delay(500);
-      }
-      if (!rocket_init("data/sync"))
-        return;
-      for (int8_t i = 0; i < sizeof_array(s_trackNames); ++i)
-        s_tracks[i] = sync_get_track(device, s_trackNames[i]);
+  WiFi.begin(SSID, PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print('.');
+    delay(500);
+  }
+  if (!rocket_init("data/sync"))
+    return;
+  for (int8_t i = 0; i < sizeof_array(s_trackNames); ++i)
+    s_tracks[i] = sync_get_track(device, s_trackNames[i]);
 }
 #endif
-
 
 void setup(void)
 {

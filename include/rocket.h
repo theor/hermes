@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include "sync.h"
+#include <SPIFFS.h>
 
 
 #define sizeof_array(array) (int)(sizeof(array) / sizeof(array[0]))
@@ -80,6 +81,33 @@ static int xis_playing(void *data)
 
 #endif //! SYNC_PLAYER
 
+void* io_open(const char* filename, const char* mode)
+{
+    Serial.println(String("open ") + filename + " " + mode);
+    String sFilename('/');
+    sFilename += filename;
+    
+    fs::File* stream = new fs::File(SPIFFS.open(sFilename, mode));
+    return stream;
+}
+size_t io_read(void *ptr, size_t size, size_t nitems, void *stream)
+{
+    Serial.println(String("read ") + size*nitems);
+    return ((fs::File*)stream)->readBytes((char*)ptr, size*nitems);
+}
+size_t io_write(const void *ptr, const size_t size, const size_t nitems, void *stream)
+{
+    Serial.println(String("write ") + size*nitems + ((fs::File*)stream)->name());
+    return ((fs::File*)stream)->write((uint8_t*)ptr, size * nitems);
+}
+int io_close(void *stream)
+{
+    Serial.println("close");
+    ((fs::File*)stream)->close();
+    delete ((fs::File*)stream);
+    return 0;
+}
+
 int rocket_init(const char *prefix)
 {
   device = sync_create_device(prefix);
@@ -88,6 +116,14 @@ int rocket_init(const char *prefix)
     Serial.println("Unable to create rocketDevice\n");
     return 0;
   }
+  sync_io_cb iocb;
+  iocb.open = &io_open;
+  iocb.read = &io_read;
+#if !defined(SYNC_PLAYER)
+  iocb.write = &io_write;
+#endif
+  iocb.close = &io_close;
+  sync_set_io_cb(device, &iocb);
 
 #if !defined(SYNC_PLAYER)
   cb.is_playing = xis_playing;
