@@ -1,3 +1,4 @@
+#pragma once
 
 #include <Arduino.h>
 #include "sync.h"
@@ -6,13 +7,12 @@
 #define sizeof_array(array) (int)(sizeof(array) / sizeof(array[0]))
 #define ROCKET_HOST_IP "10.0.0.25"
 static const char *s_trackNames[] = {
-    "group0#track0",
-    "group0#track1",
-    "group0#track2",
-    "group0#track3",
-    "group1#track0",
-    "group1#track1",
-    "group1#track2",
+    "can#X",
+    "can#Y",
+    "flower#stem",
+    "flower#open",
+    "heart#X",
+    "heart#Y",
 };
 
 static struct sync_device *device;
@@ -20,6 +20,7 @@ static const struct sync_track *s_tracks[7];
 const float bpm = 180.0f;
 const float rpb = 8.0f;
 float rps = 24.0f; // bpm / 60.0f * rpb; <- msvc cant compute this compile time... sigh
+
 int audio_is_playing = 1;
 int curtime_ms = 0;
 
@@ -64,8 +65,8 @@ static void xpause(void *data, int flag)
 
 static void xset_row(void *data, int row)
 {
-  Serial.print("set row ");
-  Serial.println(row);
+//   Serial.print("set row ");
+//   Serial.println(row);
   int newtime_ms = row_to_ms_round(row, rps);
   curtime_ms = newtime_ms;
   (void)data;

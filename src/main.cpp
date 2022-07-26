@@ -211,9 +211,6 @@ void loop(void)
   }
   else
   {
-  #ifdef ROCKET
-    if(!device) // TODO ROCKET
-  #endif
     if (renderer)
       renderer->update(touched);
   }
@@ -301,16 +298,12 @@ void loop(void)
 
     rocket_update();
 
-    row_f = ms_to_row_f(curtime_ms, rps);
-
-    int8_t x = (int8_t)sync_get_val(s_tracks[0], row_f);
-    int8_t y = (int8_t)sync_get_val(s_tracks[1], row_f);
-    if (!uploadMode)
-    {
-      display.clearDisplay();
-      display.drawCircle(x, y, 5, WHITE);
-      display.display();
-    }
+    // if (!uploadMode)
+    // {
+    //   display.clearDisplay();
+    //   display.drawCircle(x, y, 5, WHITE);
+    //   display.display();
+    // }
   }
 #endif
 }

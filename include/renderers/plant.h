@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../renderer.h"
+#include "../rocket.h"
 
 const int8_t stem_offsets[] PROGMEM = {
     0, 1, 2, 3, 3, 2, 1, 0, -1, -2, -3, -3, -2, -1};
@@ -31,27 +32,29 @@ public:
             return;
         if (buttonHeld)
             resetSleepTimer();
+
+
+    float row_f = ms_to_row_f(curtime_ms, rps);
+
+    int8_t x = (int8_t)sync_get_val(s_tracks[0], row_f);
+    int8_t y = (int8_t)sync_get_val(s_tracks[1], row_f);
+
         _elapsed = 0;
         display.clearDisplay();
-        display.drawBitmap(10, 5, bmp_can, 19, 17, WHITE);
-        const int totalStemLength = 67;
-        uint8_t stem_length = (j < totalStemLength) ? j : totalStemLength;
+        display.drawBitmap(x, y, bmp_can, 19, 17, WHITE);
+
+        uint8_t stem_length = (uint8_t)sync_get_val(s_tracks[2], row_f);
         for (uint8_t s = 0; s < stem_length; s++)
         {
             display.drawPixel(30 + stem_offsets[s % 13], 128 - 5 - s, WHITE);
         }
-        bool drawHeart = false;
-        if (j >= totalStemLength)
+        
         {
-            uint8_t flowerFrame = ((j - totalStemLength) / 10);
+            uint8_t flowerFrame = (uint8_t)sync_get_val(s_tracks[3], row_f);
             if (flowerFrame > 8)
-                {
                     flowerFrame = 8;
-                    drawHeart = true;
-                    }
             display.drawBitmap(24, 50, epd_flower_allArray[flowerFrame], 16, 16, WHITE);
-            if(drawHeart)
-                display.drawBitmap(40+random(2), 40, bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
+                display.drawBitmap((int8_t)sync_get_val(s_tracks[4], row_f), (int8_t)sync_get_val(s_tracks[5], row_f), bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
         }
         // j++;
 
