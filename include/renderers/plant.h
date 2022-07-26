@@ -12,6 +12,14 @@ const unsigned char bmp_can[] PROGMEM = {
     0x00, 0x1f, 0xe8, 0x00, 0x0f, 0xdc, 0x20, 0x07, 0xbe, 0x60, 0x03, 0x7f, 0xe0, 0x00, 0x00, 0x60,
     0x00, 0x00, 0x20};
 
+#define TRACK_LOOP 0
+#define TRACK_CAN_X 1
+#define TRACK_CAN_Y 2
+#define TRACK_FLOWER_STEM 3
+#define TRACK_FLOWER_OPENING 4
+#define TRACK_HEART_X 5
+#define TRACK_HEART_Y 6 
+
 const uint8_t NUM_DROPS = 80;
 class PlantRenderer
     : public Renderer
@@ -33,27 +41,32 @@ public:
         if (buttonHeld)
             resetSleepTimer();
 
-        float row_f = ms_to_row_f(curtime_ms, rps);
+      int loopDelta = sync_get_val_int(s_tracks[TRACK_LOOP], curtime_ms * rps / 1000.0);
+      if(loopDelta > 0)
+        curtime_ms = (((curtime_ms * rps  / 1000) - loopDelta)  * 1000)  / rps;
+//         return row - loopDelta;
+        float row_f = curtime_ms * rps / 1000.0f;
 
-        int8_t x = (int8_t)sync_get_val(s_tracks[0], row_f);
-        int8_t y = (int8_t)sync_get_val(s_tracks[1], row_f);
+        int8_t x = sync_get_val_int(s_tracks[TRACK_CAN_X], row_f);
+        int8_t y = sync_get_val_int(s_tracks[TRACK_CAN_Y], row_f);
 
         _elapsed = 0;
         display.clearDisplay();
         display.drawBitmap(x, y, bmp_can, 19, 17, WHITE);
 
-        uint8_t stem_length = (uint8_t)sync_get_val(s_tracks[2], row_f);
+        uint8_t stem_length = (uint8_t)sync_get_val(s_tracks[TRACK_FLOWER_STEM], row_f);
         for (uint8_t s = 0; s < stem_length; s++)
         {
             display.drawPixel(30 + stem_offsets[s % 13], 128 - 5 - s, WHITE);
         }
 
         {
-            uint8_t flowerFrame = (uint8_t)sync_get_val(s_tracks[3], row_f);
+            int8_t flowerFrame = (int8_t)sync_get_val_int(s_tracks[TRACK_FLOWER_OPENING], row_f);
             if (flowerFrame > 8)
                 flowerFrame = 8;
-            display.drawBitmap(24, 50, epd_flower_allArray[flowerFrame], 16, 16, WHITE);
-            display.drawBitmap((int8_t)sync_get_val(s_tracks[4], row_f), (int8_t)sync_get_val(s_tracks[5], row_f), bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
+            if(flowerFrame > 0)
+                display.drawBitmap(24, 50, epd_flower_allArray[flowerFrame], 16, 16, WHITE);
+            display.drawBitmap(sync_get_val_int(s_tracks[TRACK_HEART_X], row_f), sync_get_val_int(s_tracks[TRACK_HEART_Y], row_f), bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
         }
         // j++;
 

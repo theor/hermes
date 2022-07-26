@@ -26,6 +26,11 @@ static double key_ramp(const struct track_key k[2], double row)
 	return k[0].value + (k[1].value - k[0].value) * t;
 }
 
+int sync_get_val_int(const struct sync_track *t, double row){
+	if(!t)
+		return 0;
+	return (int)sync_get_val(t, row);
+}
 double sync_get_val(const struct sync_track *t, double row)
 {
 	int idx, irow;

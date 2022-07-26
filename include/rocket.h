@@ -8,6 +8,7 @@
 #define sizeof_array(array) (int)(sizeof(array) / sizeof(array[0]))
 #define ROCKET_HOST_IP "10.0.0.25"
 static const char *s_trackNames[] = {
+    "loop#goto",
     "can#X",
     "can#Y",
     "flower#stem",
@@ -21,7 +22,7 @@ static const struct sync_track *s_tracks[7];
 // const float bpm = 180.0f;
 // const float rpb = 8.0f; // row per beat
 // float rps = 24.0f; // row per second bpm / 60.0f * rpb; <- msvc cant compute this compile time... sigh
-const float rps = 10.0f;
+const int rps = 10;
 
 int audio_is_playing = 1;
 int curtime_ms = 0;
@@ -31,27 +32,32 @@ static struct sync_cb cb;
 #endif
 
 
-static float ms_to_row_f(int time_ms, float rps)
-{
-  const float row = rps * ((float)time_ms) * 1.0f / 1000.0f;
-  return row;
-}
+// static float ms_to_row_f(int time_ms, float rps, const struct sync_track *loop_track )
+// {
+//   const float row = rps * ((float)time_ms) * 1.0f / 1000.0f;
+//   if(loop_track) {
+//       float loopDelta = (float)sync_get_val(loop_track, row);
+//       if(loopDelta > 0.1f)
+//         return row - loopDelta;
+//   }
+//   return row;
+// }
 #if !defined(SYNC_PLAYER)
 
 
-static int row_to_ms_round(int row, float rps)
-{
-  const float newtime = ((float)(row)) / rps;
-  return (int)(floor(newtime * 1000.0f + 0.5f));
-}
+// static int row_to_ms_round(int row, float rps)
+// {
+//   const float newtime = ((float)(row)) / rps;
+//   return (int)(floor(newtime * 1000.0f + 0.5f));
+// }
 
 
 
-static int ms_to_row_round(int time_ms, float rps)
-{
-  const float r = ms_to_row_f(time_ms, rps);
-  return (int)(floor(r + 0.5f));
-}
+// static int ms_to_row_round(int time_ms, float rps, const struct sync_track *loop_track)
+// {
+//   const float r = ms_to_row_f(time_ms, rps, loop_track);
+//   return (int)(floor(r + 0.5f));
+// }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 static void xpause(void *data, int flag)
 {
@@ -69,7 +75,7 @@ static void xset_row(void *data, int row)
 {
 //   Serial.print("set row ");
 //   Serial.println(row);
-  int newtime_ms = row_to_ms_round(row, rps);
+  int newtime_ms = row  * 1000 / rps;
   curtime_ms = newtime_ms;
   (void)data;
 }
@@ -138,9 +144,11 @@ int rocket_init(const char *prefix)
     device = nullptr;
     return 0;
   }
+  Serial.println("Rocket connected.\n");
+#else
+  Serial.println("Rocket player initialized.\n");
 #endif
 
-  Serial.println("Rocket connected.\n");
 
   return 1;
 }
@@ -154,7 +162,7 @@ static int rocket_update()
     // curtime_ms = curtime_ms % 300;
 #if !defined(SYNC_PLAYER)
   int row = 0;
-  row = ms_to_row_round(curtime_ms, rps);
+  row = curtime_ms * rps;// ms_to_row_round(curtime_ms, rps, nullptr);
   if (sync_update(device, row, &cb, 0))
     sync_tcp_connect(device, ROCKET_HOST_IP, SYNC_DEFAULT_PORT);
 #endif
