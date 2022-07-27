@@ -7,19 +7,8 @@
 
 #define sizeof_array(array) (int)(sizeof(array) / sizeof(array[0]))
 #define ROCKET_HOST_IP "10.0.0.25"
-static const char *s_trackNames[] = {
-    "loop#goto",
-    "loop#play",
-    "can#X",
-    "can#Y",
-    "flower#stem",
-    "flower#open",
-    "heart#X",
-    "heart#Y",
-};
 
 static struct sync_device *device;
-static const struct sync_track *s_tracks[8];
 // const float bpm = 180.0f;
 // const float rpb = 8.0f; // row per beat
 // float rps = 24.0f; // row per second bpm / 60.0f * rpb; <- msvc cant compute this compile time... sigh

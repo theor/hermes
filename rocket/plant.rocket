@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rootElement>
+	<bookmark row="238" />
+	<loopmark row="291" />
+<tracks rows="10000" startRow="0" endRow="300" rowsPerBeat="8"
+beatsPerMin="125">
+	<track name="loop#goto" folded="0" muteKeyCount="0"
+color="ffb27400">
+		<key row="0" value="-1.000000" interpolation="0" />
+		<key row="285" value="238.000000" interpolation="0" />
+	</track>
+	<track name="loop#play" folded="0" muteKeyCount="0"
+color="ffb25091">
+		<key row="0" value="0.000000" interpolation="0" />
+		<key row="238" value="1.000000" interpolation="0" />
+	</track>
+	<track name="can#X" folded="0" muteKeyCount="0" color="ffb27474">
+		<key row="0" value="30.000000" interpolation="2" />
+		<key row="129" value="5.000000" interpolation="2" />
+		<key row="204" value="20.000000" interpolation="2" />
+		<key row="237" value="-100.000000" interpolation="2" />
+	</track>
+	<track name="can#Y" folded="0" muteKeyCount="0" color="ffb28050">
+		<key row="0" value="10.000000" interpolation="0" />
+	</track>
+	<track name="flower#stem" folded="0" muteKeyCount="0"
+color="ffa9b250">
+		<key row="0" value="0.000000" interpolation="2" />
+		<key row="129" value="60.000000" interpolation="2" />
+	</track>
+	<track name="flower#open" folded="0" muteKeyCount="0"
+color="ff60b250">
+		<key row="0" value="-1.000000" interpolation="0" />
+		<key row="129" value="0.000000" interpolation="1" />
+		<key row="171" value="5.000000" interpolation="1" />
+		<key row="204" value="0.000000" interpolation="1" />
+		<key row="231" value="10.000000" interpolation="0" />
+	</track>
+	<track name="heart#X" folded="0" muteKeyCount="0"
+color="ff4fb292">
+		<key row="0" value="80.000000" interpolation="0" />
+		<key row="231" value="80.000000" interpolation="3" />
+		<key row="238" value="40.000000" interpolation="3" />
+		<key row="244" value="42.000000" interpolation="2" />
+		<key row="254" value="40.000000" interpolation="2" />
+		<key row="263" value="38.000000" interpolation="2" />
+		<key row="271" value="43.000000" interpolation="2" />
+	</track>
+	<track name="heart#Y" folded="0" muteKeyCount="0"
+color="ff4f71b2">
+		<key row="233" value="40.000000" interpolation="2" />
+		<key row="242" value="41.000000" interpolation="2" />
+		<key row="250" value="37.000000" interpolation="2" />
+		<key row="259" value="41.000000" interpolation="2" />
+		<key row="268" value="38.000000" interpolation="2" />
+		<key row="278" value="43.000000" interpolation="2" />
+		<key row="284" value="40.000000" interpolation="2" />
+	</track>
+</tracks>
+	</rootElement>

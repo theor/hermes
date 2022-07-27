@@ -4,6 +4,9 @@
 #include <Adafruit_SSD1306.h>
 #include "global.h"
 #include "elapsedMillis.h"
+#include "device.h"
+#include "utils.h"
+#include <cmath>
 
 class Renderer
 {
@@ -16,6 +19,9 @@ public:
   }
   virtual void update(bool buttonHeld) {}
   virtual void stop() {}
+  virtual void initTracks(sync_device* device) {
+
+  }
   virtual ~Renderer() {}
   bool sleepTimerResetRequested()
   {

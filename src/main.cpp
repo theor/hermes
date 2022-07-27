@@ -27,6 +27,7 @@
 #include "server.h"
 #include "renderer.h"
 #include "renderers/plant.h"
+#include "renderers/rain.h"
 #include "TouchButton.h"
 #include "elapsedMillis.h"
 
@@ -77,12 +78,16 @@ void setRenderer(RenderMode newMode)
     renderer = new TextRenderer(true);
     break;
   case RenderMode::Plant:
-    renderer = new PlantRenderer();
+    renderer = new Plant::PlantRenderer();
+    break;
+  case RenderMode::Rain:
+    renderer = new Rain::RainRenderer();
     break;
   default:
     renderer = new TextRenderer(false);
     break;
   }
+    renderer->initTracks(device);
   renderer->start();
 }
 
@@ -156,8 +161,6 @@ void rocketMode()
 #endif
   if (!rocket_init("data/sync"))
     return;
-  for (int8_t i = 0; i < sizeof_array(s_trackNames); ++i)
-    s_tracks[i] = sync_get_track(device, s_trackNames[i]);
 }
 #endif
 
@@ -179,6 +182,11 @@ void setup(void)
   Serial.begin(115200);
 
   initDisplay();
+
+
+#ifdef ROCKET
+    rocketMode();
+#endif
   pullMessage();
 
   setupServer();
@@ -189,9 +197,6 @@ void setup(void)
   touchButton.reset();
   uploadButton.reset();
 
-#ifdef ROCKET
-  rocketMode();
-#endif
 }
 
 void loop(void)
