@@ -13,12 +13,13 @@ const unsigned char bmp_can[] PROGMEM = {
     0x00, 0x00, 0x20};
 
 #define TRACK_LOOP 0
-#define TRACK_CAN_X 1
-#define TRACK_CAN_Y 2
-#define TRACK_FLOWER_STEM 3
-#define TRACK_FLOWER_OPENING 4
-#define TRACK_HEART_X 5
-#define TRACK_HEART_Y 6 
+#define TRACK_LOOP_PLAY 1
+#define TRACK_CAN_X 2
+#define TRACK_CAN_Y 3
+#define TRACK_FLOWER_STEM 4
+#define TRACK_FLOWER_OPENING 5
+#define TRACK_HEART_X 6
+#define TRACK_HEART_Y 7
 
 const uint8_t NUM_DROPS = 80;
 class PlantRenderer
@@ -43,10 +44,10 @@ public:
 
       int loopDelta = sync_get_val_int(s_tracks[TRACK_LOOP], curtime_ms * rps / 1000.0);
       if(loopDelta > 0)
-        curtime_ms = (((curtime_ms * rps  / 1000) - loopDelta)  * 1000)  / rps;
+        curtime_ms = (loopDelta  * 1000)  / rps;
 //         return row - loopDelta;
         float row_f = curtime_ms * rps / 1000.0f;
-
+        // Serial.println(row_f);
         int8_t x = sync_get_val_int(s_tracks[TRACK_CAN_X], row_f);
         int8_t y = sync_get_val_int(s_tracks[TRACK_CAN_Y], row_f);
 
@@ -74,14 +75,17 @@ public:
 
         if (buttonHeld)
         {
-            icons[i][0] = 28 + random(8);
-            icons[i][1] = 25;
+            icons[i][0] = x + + 18 + random(8);
+            icons[i][1] = y + 15;
             i = ((i + 1) % NUM_DROPS);
         }
+
+        bool playing = sync_get_val_int(s_tracks[TRACK_LOOP_PLAY], row_f) > 0;
+
         for (int8_t f = 0; f < NUM_DROPS; f++)
         {
-            if (icons[f][1] == 123)
-                {curtime_ms+=160;Serial.println(curtime_ms);}
+            if (!playing && icons[f][1] == 123)
+                {curtime_ms+=160;}
             if (icons[f][1] < 123)
                 icons[f][1] += 2;
             else
@@ -91,6 +95,9 @@ public:
         {
             display.drawPixel(icons[f][0], icons[f][1], WHITE);
         }
+
+        if(playing)
+            curtime_ms += 160;
 
         display.display();
     }
