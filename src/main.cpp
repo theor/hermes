@@ -31,9 +31,7 @@
 #include "TouchButton.h"
 #include "elapsedMillis.h"
 
-#ifdef ROCKET
 #include "rocket.h"
-#endif
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -184,9 +182,7 @@ void setup(void)
   initDisplay();
 
 
-#ifdef ROCKET
     rocketMode();
-#endif
   pullMessage();
 
   setupServer();
@@ -298,10 +294,8 @@ void loop(void)
     }
   }
 
-#ifdef ROCKET
   if (device)
   {
     rocket_update();
   }
-#endif
 }

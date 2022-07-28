@@ -31,7 +31,7 @@ color="ff4f71b2">
 	</track>
 	<track name="text#label" folded="0" muteKeyCount="0"
 color="ff8850b2">
-		<key row="0" value="4.000000" interpolation="0" />
+		<key row="0" value="-1.000000" interpolation="0" />
 		<key row="24" value="0.000000" interpolation="0" />
 		<key row="32" value="1.000000" interpolation="0" />
 		<key row="40" value="2.000000" interpolation="0" />

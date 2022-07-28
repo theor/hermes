@@ -77,7 +77,6 @@ public:
   TextRainRenderer() {}
   virtual void press(bool pressed)
   {
-    resetSleepTimer();
   }
   virtual void start()
   {

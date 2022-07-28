@@ -83,6 +83,8 @@ void* io_open(const char* filename, const char* mode)
     Serial.println(String("open ") + filename + " " + mode);
     String sFilename('/');
     sFilename += filename;
+    if(sFilename.length() >= 31)
+        sFilename = sFilename.substring(0, 30);
     
     fs::File* stream = new fs::File(SPIFFS.open(sFilename, mode));
     return stream;
