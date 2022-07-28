@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rootElement>
-<tracks rows="10000" startRow="0" endRow="10000" rowsPerBeat="8"
-beatsPerMin="125">
+<tracks rows="10000" startRow="0" endRow="10000" rowsPerBeat="1"
+beatsPerMin="60">
 	<track name="loop#goto" folded="0" muteKeyCount="0"
-color="ffb27474" />
+color="ffb27474">
+		<key row="0" value="1.000000" interpolation="0" />
+	</track>
 	<track name="loop#play" folded="0" muteKeyCount="0"
 color="ffb28050">
 		<key row="0" value="1.000000" interpolation="0" />

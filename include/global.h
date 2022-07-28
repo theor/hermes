@@ -11,6 +11,7 @@ extern Adafruit_SSD1306 display;
 extern AsyncWebServer server;
 extern Renderer *renderer;
 extern bool uploadMode;
+extern bool debugMode;
 
 #define LED_PIN 2                // ESP32 Pin to which onboard LED is connected
 
@@ -24,6 +25,7 @@ extern bool uploadMode;
 #define SENTINEL_OFFSET 0
 #define MSG_OFFSET 10
 #define MODE_OFFSET 1
+#define DEBUGMODE_OFFSET 2
 
 
 enum class RenderMode : uint8_t

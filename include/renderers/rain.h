@@ -309,6 +309,15 @@ namespace Rain {
             0x00, 0x03, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
+    // 'stork', 30x20px
+    const unsigned char epd_bitmap_stork [] PROGMEM = {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbe, 0x00, 0x00,
+            0x00, 0xf6, 0x00, 0x00, 0x01, 0x7f, 0x00, 0x00, 0x01, 0xff, 0x00, 0x00, 0x00, 0xfb, 0x80, 0x00,
+            0x01, 0xfb, 0x80, 0x00, 0x00, 0xfb, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x7b, 0x00, 0x00,
+            0x00, 0x1b, 0x00, 0x00, 0x00, 0x19, 0x30, 0x00, 0x00, 0xf8, 0x48, 0x00, 0x10, 0xf8, 0xf7, 0x80,
+            0x7f, 0xff, 0x83, 0x00, 0x08, 0x1e, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
 // Array of all bitmaps for convenience. (Total bytes used to store images in PROGMEM = 1664)
     const int epd_tree_LEN = 4;
     const unsigned char* epd_tree_allArray[4] = {
@@ -382,9 +391,10 @@ namespace Rain {
             int play = get_int(RainTracks::Track_loop_play, row_f);
             int clouds = get_int(RainTracks::Track_clouds, row_f);
             bool ignoreButton = get_int(RainTracks::Track_loop, row_f) != 0;
+            if (buttonHeld)
+                resetSleepTimer();
             if(!ignoreButton) {
                 if (buttonHeld) {
-                    resetSleepTimer();
                     if (play)
                         curtime_ms += 33;
                 } else if (curtime_ms > 0) {
@@ -418,7 +428,9 @@ namespace Rain {
                 else if(treeframe >= epd_tree_LEN)
                     treeframe = dbl - treeframe;
             }
+            display.drawBitmap((_totalElapsed / 60) % 100 - 20, 50 - rainIntensity, epd_bitmap_stork, 30, 20, WHITE);
             display.drawBitmap(-4, groundLevel - 65, epd_tree_allArray[treeframe], 41, 66, WHITE);
+
 
             if (rainIntensity > NUM_DROPS)
                 rainIntensity = NUM_DROPS;
@@ -488,8 +500,8 @@ namespace Rain {
 
             int label = get_int(RainTracks::Track_TextLabel, row_f);
             if (label >= 0) {
-                display.fillRect(0, 50, 64, 30, BLACK);
-                display.setCursor(4, 70);
+                display.fillRect(0, 80, 64, 30, BLACK);
+                display.setCursor(4, 100);
                 display.setTextWrap(false);
                 display.setFont(&Pacifico_Regular12pt7b);
                 display.println(Labels[label % LabelsSize]);
