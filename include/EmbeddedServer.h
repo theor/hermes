@@ -53,16 +53,12 @@ void setupServer()
     });
     server.on("/setDebugMode", HTTP_GET, [](AsyncWebServerRequest *request)
     {
-        if (request->hasParam(PARAM_INPUT_1))
-        {
-            int i = request->getParam(PARAM_INPUT_1)->value().toInt();
-            EEPROM.writeByte(DEBUGMODE_OFFSET, (uint8_t)i);
-            EEPROM.commit();
-            debugMode = i == 1;
-            request->send(200, "text/html", "Set debug mode to " + String(i));
-            Serial.println("Set debug mode to " + String((uint8_t) i));
-
-        }
+        int i = request->hasParam(PARAM_INPUT_1) ? request->getParam(PARAM_INPUT_1)->value().toInt() : 0;
+        EEPROM.writeByte(DEBUGMODE_OFFSET, (uint8_t) i);
+        EEPROM.commit();
+        debugMode = i == 1;
+        request->send(200, "text/html", "Set debug mode to " + String(i));
+        Serial.println("Set debug mode to " + String((uint8_t) i));
     });
     server.on("/setMode", HTTP_GET, [](AsyncWebServerRequest *request)
     {

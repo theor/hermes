@@ -1,11 +1,13 @@
 #pragma once
-
+#ifndef SIMULATOR
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
+#endif
 #include "global.h"
 #include "elapsedMillis.h"
 #include "device.h"
 #include "utils.h"
+#include "bitmap.h"
 #include <cmath>
 
 class Renderer
@@ -30,6 +32,11 @@ public:
     return val;
   }
 
+    virtual const char *getPrefix()
+    {
+        return nullptr;
+    }
+
 protected:
   void resetSleepTimer()
   {
@@ -48,8 +55,6 @@ protected:
 public:
   TextRenderer(bool renderBitmap) : _renderBitmap(renderBitmap)
   {
-    Serial.print("CTOR " + String(renderBitmap));
-    Serial.println(_renderBitmap);
   }
   virtual void start()
   {

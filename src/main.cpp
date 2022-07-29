@@ -22,7 +22,7 @@
 #include "bitmap.h"
 #include "global.h"
 
-#include "server.h"
+#include "EmbeddedServer.h"
 #include "renderer.h"
 #include "renderers/plant.h"
 #include "renderers/rain.h"
@@ -79,6 +79,9 @@ void setRenderer(RenderMode newMode)
         default:renderer = new TextRenderer(false);
             break;
     }
+    SPIFFS.mkdir(String("/") + renderer->getPrefix());
+    sync_set_base(device, renderer->getPrefix());
+
     renderer->initTracks(device);
     renderer->start();
 }
@@ -140,7 +143,6 @@ void initDisplay()
 void rocketMode()
 {
     SPIFFS.begin(true);
-    SPIFFS.mkdir("/data");
     if (debugMode)
     {
         WiFi.mode(WIFI_STA);
@@ -151,7 +153,7 @@ void rocketMode()
             delay(500);
         }
     }
-    if (!rocket_init("data/sync"))
+    if (!rocket_init())
         return;
 }
 
@@ -303,11 +305,17 @@ void loop(void)
             Serial.println(WiFi.localIP());
             AsyncElegantOTA.begin(&server); // Start ElegantOTA
             Serial.println("HTTP server started");
+            Serial.println("    connect rocket");
+            sync_tcp_connect(device, ROCKET_HOST_IP, SYNC_DEFAULT_PORT);
         }
     }
 
+    Serial.println(currentMillis);
+
+    if(!uploadTouched)
     if (device)
     {
         rocket_update();
     }
+    Serial.println("rocket update done");
 }

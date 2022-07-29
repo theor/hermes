@@ -1,4 +1,7 @@
+#pragma once
+
 #include <Arduino.h>
+
 
 
 #define HEART_HEIGHT 10

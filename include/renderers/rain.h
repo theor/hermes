@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../renderer.h"
-#include "../rocket.h"
+#include <renderer.h>
+#include <rocket.h>
 #include "fonts/Pacifico_Regular20pt7b.h"
 
 //const int8_t stem_offsets[] PROGMEM = {
@@ -362,6 +362,11 @@ namespace Rain {
     public:
         virtual void press(bool pressed) {}
 
+        const char *getPrefix() override
+        {
+            return "rain";
+        }
+
         virtual void initTracks(sync_device *device) {
             s_tracks[(int) RainTracks::Track_loop] = sync_get_track(device, "loop#goto");
             s_tracks[(int) RainTracks::Track_loop_play] = sync_get_track(device, "loop#play");
@@ -386,6 +391,7 @@ namespace Rain {
         virtual void update(bool buttonHeld) {
             if (_elapsed < 33)
                 return;
+            _elapsed = 0;
             long totalElapsed = _totalElapsed;
             float row_f = curtime_ms * rps / 1000.0f;
             int play = get_int(RainTracks::Track_loop_play, row_f);
@@ -394,6 +400,7 @@ namespace Rain {
             if (buttonHeld)
                 resetSleepTimer();
             if(!ignoreButton) {
+                audio_is_playing = buttonHeld;
                 if (buttonHeld) {
                     if (play)
                         curtime_ms += 33;
@@ -428,8 +435,10 @@ namespace Rain {
                 else if(treeframe >= epd_tree_LEN)
                     treeframe = dbl - treeframe;
             }
-            display.drawBitmap((_totalElapsed / 60) % 100 - 20, 50 - rainIntensity, epd_bitmap_stork, 30, 20, WHITE);
             display.drawBitmap(-4, groundLevel - 65, epd_tree_allArray[treeframe], 41, 66, WHITE);
+
+            // STORK
+            display.drawBitmap((_totalElapsed / 60) % 100 - 20, 50 - rainIntensity * 2, epd_bitmap_stork, 30, 20, INVERSE);
 
 
             if (rainIntensity > NUM_DROPS)
@@ -500,15 +509,19 @@ namespace Rain {
 
             int label = get_int(RainTracks::Track_TextLabel, row_f);
             if (label >= 0) {
-                display.fillRect(0, 80, 64, 30, BLACK);
+                display.fillRect(0, 80, 64, 30, WHITE);
                 display.setCursor(4, 100);
                 display.setTextWrap(false);
                 display.setFont(&Pacifico_Regular12pt7b);
+                display.setTextColor(INVERSE);
                 display.println(Labels[label % LabelsSize]);
             }
             display.setFont(nullptr);
             display.setTextWrap(true);
+//            display.ssd1306_command(SSD1306_SETSTARTLINE | (uint8_t)((offset++) % 64));
+
             display.display();
         }
+        uint8_t offset;
     };
 }

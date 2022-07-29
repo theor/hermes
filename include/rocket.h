@@ -2,7 +2,11 @@
 
 #include <Arduino.h>
 #include "sync.h"
+#include "global.h"
+
+#ifndef SIMULATOR
 #include <SPIFFS.h>
+#endif
 
 
 #define sizeof_array(array) (int)(sizeof(array) / sizeof(array[0]))
@@ -75,6 +79,7 @@ static int xis_playing(void *data) {
 
 #endif //! SYNC_PLAYER
 
+#ifndef SIMULATOR
 void *io_open(const char *filename, const char *mode) {
     Serial.println(String("open ") + filename + " " + mode);
     String sFilename('/');
@@ -102,14 +107,15 @@ int io_close(void *stream) {
     delete ((fs::File *) stream);
     return 0;
 }
-
-int rocket_init(const char *prefix) {
-    device = sync_create_device(prefix);
+#endif
+int rocket_init() {
+    device = sync_create_device(nullptr);
     if (!device) {
         Serial.println("Unable to create rocketDevice\n");
         return 0;
     }
     sync_io_cb iocb;
+#ifndef SIMULATOR
     iocb.open = &io_open;
     iocb.read = &io_read;
 #if !defined(SYNC_PLAYER)
@@ -117,6 +123,7 @@ int rocket_init(const char *prefix) {
 #endif
     iocb.close = &io_close;
     sync_set_io_cb(device, &iocb);
+#endif
 
 #if !defined(SYNC_PLAYER)
     cb.is_playing = xis_playing;
@@ -140,13 +147,21 @@ int rocket_init(const char *prefix) {
 }
 
 static int rocket_update() {
-#if !defined(SYNC_PLAYER)
     int row = 0;
-    row = curtime_ms * rps;// ms_to_row_round(curtime_ms, rps, nullptr);
+    row = curtime_ms * rps / 1000;// ms_to_row_round(curtime_ms, rps, nullptr);
+//    Serial.println("wifi ?");
     if (WiFi.isConnected())
-        if (sync_update(device, row, &cb, 0))
+    {
+//        Serial.println("  wifi");
+        if (sync_update(device, row, &cb, 0) && debugMode)
+        {
+            Serial.println("    reconnect rocket");
             sync_tcp_connect(device, ROCKET_HOST_IP, SYNC_DEFAULT_PORT);
-#endif
+        }
+    }
+    else {
+//        Serial.println("  no wifi");
+    }
 
     return 1;
 }

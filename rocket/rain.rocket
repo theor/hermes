@@ -3,8 +3,8 @@
 <tracks rows="10000" startRow="0" endRow="10000" rowsPerBeat="1"
 beatsPerMin="60">
 	<track name="loop#goto" folded="0" muteKeyCount="0"
-color="ffb27474">
-		<key row="0" value="1.000000" interpolation="0" />
+color="ffff0000">
+		<key row="0" value="0.000000" interpolation="0" />
 	</track>
 	<track name="loop#play" folded="0" muteKeyCount="0"
 color="ffb28050">

@@ -22,6 +22,7 @@ extern "C" {
 struct sync_device;
 struct sync_track;
 
+void sync_set_base(struct sync_device* device, const char *base);
 struct sync_device *sync_create_device(const char *);
 void sync_destroy_device(struct sync_device *);
 

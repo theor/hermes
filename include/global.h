@@ -1,15 +1,23 @@
 #pragma once
 
+#ifndef SIMULATOR
 #include <Arduino.h>
-#include <ESPAsyncWebServer.h>
 #include <Adafruit_SSD1306.h>
 
+class AsyncWebServer;
+
+extern AsyncWebServer server;
 class Renderer;
 
 extern String payload;
 extern Adafruit_SSD1306 display;
-extern AsyncWebServer server;
+//extern AsyncWebServer server;
 extern Renderer *renderer;
+#else
+#include <string>
+extern std::string payload;
+
+#endif
 extern bool uploadMode;
 extern bool debugMode;
 
