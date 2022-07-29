@@ -8,11 +8,13 @@
 #include "device.h"
 #include "utils.h"
 #include "bitmap.h"
+#include "rocket.h"
 #include <cmath>
 
 class Renderer
 {
 public:
+    Renderer(Adafruit_SSD1306* display) : display(display){}
   virtual void start() = 0;
   virtual void press(bool pressed)
   {
@@ -38,10 +40,12 @@ public:
     }
 
 protected:
+    Adafruit_SSD1306* display;
   void resetSleepTimer()
   {
     _requestSleepTimerReset = true;
   }
+   float getRowF(){return curtime_ms * rps / 1000.0f; }
 
 private:
   bool _requestSleepTimerReset;
@@ -53,18 +57,18 @@ protected:
   bool _renderBitmap;
 
 public:
-  TextRenderer(bool renderBitmap) : _renderBitmap(renderBitmap)
+  TextRenderer(bool renderBitmap) : Renderer(display), _renderBitmap(renderBitmap)
   {
   }
   virtual void start()
   {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(payload);
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->println(payload);
     // Serial.println("Text bitmap=" + String(_renderBitmap ? "true" : "false"));
     if (this->_renderBitmap)
-      display.drawBitmap(0, 128 - 48, epd_bitmap_et, 64, 47, WHITE);
-    display.display();
+      display->drawBitmap(0, 128 - 48, epd_bitmap_et, 64, 47, WHITE);
+    display->display();
   }
 };
 
@@ -79,7 +83,7 @@ protected:
   elapsedMillis _elapsed;
 
 public:
-  TextRainRenderer() {}
+  TextRainRenderer() : Renderer(display)  {}
   virtual void press(bool pressed)
   {
   }
@@ -88,8 +92,8 @@ public:
     // Initialize 'snowflake' positions
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
-      icons[f][XPOS] = random(1 - HEART_WIDTH, display.width() - HEART_WIDTH);
-      icons[f][YPOS] = display.height();
+      icons[f][XPOS] = random(1 - HEART_WIDTH, display->width() - HEART_WIDTH);
+      icons[f][YPOS] = display->height();
       icons[f][DELTAY] = random(2, 6);
     }
   }
@@ -98,14 +102,14 @@ public:
     if (_elapsed < 33)
       return;
     _elapsed = 0;
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(payload);
+    display->clearDisplay();
+    display->setCursor(0, 0);
+    display->println(payload);
 
     // Draw each snowflake:
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
-      display.drawBitmap(icons[f][XPOS], icons[f][YPOS], bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
+      display->drawBitmap(icons[f][XPOS], icons[f][YPOS], bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
     }
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
@@ -131,14 +135,14 @@ public:
         if (icons[f][YPOS] < 0)
         {
           //   // Reinitialize to a random position, just off the top
-          icons[f][XPOS] = random(1, display.width() - HEART_WIDTH);
-          icons[f][YPOS] = display.height();
+          icons[f][XPOS] = random(1, display->width() - HEART_WIDTH);
+          icons[f][YPOS] = display->height();
           icons[f][DELTAY] = random(1, 6);
           break;
         }
       }
     }
 
-    display.display();
+    display->display();
   }
 };

@@ -20,10 +20,10 @@ find_library(SDL2_LIBRARY REQUIRED
         )
 message("suffix" ${SDL2_LIBRARY})
 include_directories("SDL2/include")
-include_directories("${CMAKE_CURRENT_LIST_DIR}/../include")
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 add_definitions(-DSIMULATOR)
 add_executable(sim Arduino.cpp device.c track.c Adafruit_GFX.cpp Adafruit_SSD1306.cpp main.cpp )
+target_include_directories(sim PUBLIC "${CMAKE_CURRENT_LIST_DIR}/../include")
 target_link_libraries(sim ${SDL2_LIBRARY})
 
 if(WIN32)

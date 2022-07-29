@@ -394,7 +394,7 @@ namespace Rain {
                 return;
             _elapsed = 0;
             long totalElapsed = _totalElapsed;
-            float row_f = curtime_ms * rps / 1000.0f;
+            float row_f = getRowF();
             int play = get_int(RainTracks::Track_loop_play, row_f);
             int clouds = get_int(RainTracks::Track_clouds, row_f);
             bool ignoreButton = get_int(RainTracks::Track_loop, row_f) != 0;
@@ -410,14 +410,14 @@ namespace Rain {
                     curtime_ms = max(0, min(curtime_ms, 3000));
                 }
             }
-            display.clearDisplay();
+            display->clearDisplay();
 
             int8_t x = sync_get_val_int(track(RainTracks::Track_sun_x), row_f);
             int8_t y = sync_get_val_int(track(RainTracks::Track_sun_y), row_f);
-            display.drawBitmap(x, y, bmp_sun, 32, 31, WHITE);
+            display->drawBitmap(x, y, bmp_sun, 32, 31, WHITE);
             const uint8_t groundLevel = 122;
             // ground
-            display.drawFastHLine(0, groundLevel + 1, 64, WHITE);
+            display->drawFastHLine(0, groundLevel + 1, 64, WHITE);
 
             int8_t rainIntensity = sync_get_val_int(track(RainTracks::Track_rain), row_f);
 
@@ -436,10 +436,10 @@ namespace Rain {
                 else if(treeframe >= epd_tree_LEN)
                     treeframe = dbl - treeframe;
             }
-            display.drawBitmap(-4, groundLevel - 65, epd_tree_allArray[treeframe], 41, 66, WHITE);
+            display->drawBitmap(-4, groundLevel - 65, epd_tree_allArray[treeframe], 41, 66, WHITE);
 
             // STORK
-            display.drawBitmap((_totalElapsed / 60) % 100 - 20, 50 - rainIntensity * 2, epd_bitmap_stork, 30, 20, INVERSE);
+            display->drawBitmap((_totalElapsed / 60) % 100 - 20, 50 - rainIntensity * 2, epd_bitmap_stork, 30, 20, INVERSE);
 
 
             // RAIN
@@ -463,13 +463,13 @@ namespace Rain {
                 if (icons[f].alive) {
                     icons[f].y += 2;
                     icons[f].x += 1;
-                    if (icons[f].x > display.width())
+                    if (icons[f].x > display->width())
                         icons[f].x = 0;
                     if (icons[f].y > groundLevel)
                         icons[f].alive = false;
                     else {
 
-                        display.drawPixel(icons[f].x, icons[f].y, WHITE);
+                        display->drawPixel(icons[f].x, icons[f].y, WHITE);
                     }
                 }
             }
@@ -484,14 +484,14 @@ namespace Rain {
                 int16_t x = (c * 39 + speed * (totalElapsed / 600)) % (64 + 20) - 20 + fmax(0, 100 - rainIntensity);
 
 
-                display.drawBitmap(x - 1, y - 1, epd_bitmap_clouds[c % 4], 30, 10, BLACK);
-                display.drawBitmap(x, y, epd_bitmap_clouds[c % 4], 30, 10, WHITE);
+                display->drawBitmap(x - 1, y - 1, epd_bitmap_clouds[c % 4], 30, 10, BLACK);
+                display->drawBitmap(x, y, epd_bitmap_clouds[c % 4], 30, 10, WHITE);
             }
 
             if (_boltTimer.endedCooldown()) {
                 _boltTimer.setDuration(random(3000, 5000));
                 _boltTimer.setCooldown(random(300, 600));
-                display.invertDisplay(false);
+                display->invertDisplay(false);
 //                Serial.println("ended");
             }
             _boltTimer.update();
@@ -502,32 +502,32 @@ namespace Rain {
                     uint8_t bolt_on = seq(seq_short_long, 12, bolt_progress, _boltTimer.getCooldown(), false);
 //                    uint8_t bolt_on = seq_short_long[((/*0-500*/_boltTimer - 1000) * 12 / 500) % 12];
                     if (bolt_on)
-                        display.drawBitmap(((_boltTimer.getCycleCount() * 11) % 15) - 7, 0,
+                        display->drawBitmap(((_boltTimer.getCycleCount() * 11) % 15) - 7, 0,
                                            epd_bitmap_bolts[_boltTimer.getCycleCount() % epd_bitmap_bolts_LEN], 64, 128,
                                            WHITE);
-                    display.invertDisplay(bolt_on);
+                    display->invertDisplay(bolt_on);
                 }
             }
             if (_boltTimer.endedCooldown()) {
                 _boltTimer.setDuration(random(1000, 5000));
                 _boltTimer.setCooldown(random(300, 600));
-                display.invertDisplay(false);
+                display->invertDisplay(false);
             }
 
             int label = get_int(RainTracks::Track_TextLabel, row_f);
             if (label >= 0) {
-                display.fillRect(0, 80, 64, 30, WHITE);
-                display.setCursor(4, 100);
-                display.setTextWrap(false);
-                display.setFont(&Pacifico_Regular12pt7b);
-                display.setTextColor(INVERSE);
-                display.println(Labels[label % LabelsSize]);
+                display->fillRect(0, 80, 64, 30, WHITE);
+                display->setCursor(4, 100);
+                display->setTextWrap(false);
+                display->setFont(&Pacifico_Regular12pt7b);
+                display->setTextColor(INVERSE);
+                display->println(Labels[label % LabelsSize]);
             }
-            display.setFont(nullptr);
-            display.setTextWrap(true);
-//            display.ssd1306_command(SSD1306_SETSTARTLINE | (uint8_t)((offset++) % 64));
+            display->setFont(nullptr);
+            display->setTextWrap(true);
+//            display->ssd1306_command(SSD1306_SETSTARTLINE | (uint8_t)((offset++) % 64));
 
-            display.display();
+            display->display();
         }
         uint8_t offset;
     };

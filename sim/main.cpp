@@ -18,6 +18,7 @@ Adafruit_SSD1306 display(128, 64);
 bool pressed = false;
 bool debugMode = true;
 #include <renderers/rain.h>
+#include <renderers/CatRenderer.h>
 
 // Define MAX and MIN macros
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
@@ -28,7 +29,7 @@ int f = 4;
 #define SDL_SCREEN_WIDTH    (SCREEN_HEIGHT*f + 2)
 #define SDL_SCREEN_HEIGHT   (SCREEN_WIDTH*f + 2)
 
-Rain::RainRenderer renderer;
+Renderer* renderer;
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -126,9 +127,10 @@ int main(int argc, char *argv[])
     display.begin();
     display.setRotation(1);
     display.setTextColor(WHITE, BLACK);
-    renderer.start();
-    sync_set_base(device, renderer.getPrefix());
-    renderer.initTracks(device);
+    renderer = new Cat::CatRenderer(&display);
+    renderer->start();
+    sync_set_base(device, renderer->getPrefix());
+    renderer->initTracks(device);
     Uint64 last = SDL_GetPerformanceCounter();
     // Event loop
     while (!quit)
@@ -162,7 +164,7 @@ int main(int argc, char *argv[])
                     if (e.key.keysym.scancode == SDL_SCANCODE_SPACE)
                     {
                         if (!pressed)
-                            renderer.press(true);
+                            renderer->press(true);
                         pressed = true;
                     }
                     break;
@@ -170,7 +172,7 @@ int main(int argc, char *argv[])
                     if (e.button.button == 1)
                     {
                         if (!pressed)
-                            renderer.press(true);
+                            renderer->press(true);
                         pressed = true;
                     }
                     break;
@@ -178,7 +180,7 @@ int main(int argc, char *argv[])
                     if (e.key.keysym.scancode == SDL_SCANCODE_SPACE)
                     {
                         if (pressed)
-                            renderer.press(false);
+                            renderer->press(false);
                         pressed = false;
                     }
                     break;
@@ -186,7 +188,7 @@ int main(int argc, char *argv[])
                     if (e.button.button == 1)
                     {
                         if (pressed)
-                            renderer.press(false);
+                            renderer->press(false);
                         pressed = false;
                     }
                     break;
@@ -201,7 +203,7 @@ int main(int argc, char *argv[])
 
         display.setCursor(4,32);
 //        display.println("test");
-        renderer.update(pressed);
+        renderer->update(pressed);
 
 
         // Initialize sdlRenderer color white for the background
