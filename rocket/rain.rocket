@@ -24,12 +24,12 @@ color="ffb28050">
 	<track name="rain#intensity" folded="0" muteKeyCount="0"
 color="ff4fb292">
 		<key row="0" value="100.000000" interpolation="2" />
-		<key row="3" value="60.000000" interpolation="2" />
-		<key row="10" value="0.000000" interpolation="1" />
+		<key row="32" value="0.000000" interpolation="2" />
 	</track>
 	<track name="clouds#x" folded="0" muteKeyCount="0"
 color="ff4f71b2">
-		<key row="0" value="30.000000" interpolation="0" />
+		<key row="0" value="20.000000" interpolation="0" />
+		<key row="24" value="1.000000" interpolation="0" />
 	</track>
 	<track name="text#label" folded="0" muteKeyCount="0"
 color="ff8850b2">

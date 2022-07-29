@@ -358,6 +358,7 @@ namespace Rain {
         elapsedMillis _elapsed;
         elapsedMillis _totalElapsed;
         Timer _boltTimer;
+        Timer _rainTimer;
         const struct sync_track *s_tracks[7];
     public:
         virtual void press(bool pressed) {}
@@ -417,10 +418,10 @@ namespace Rain {
             const uint8_t groundLevel = 122;
             // ground
             display.drawFastHLine(0, groundLevel + 1, 64, WHITE);
+
             int8_t rainIntensity = sync_get_val_int(track(RainTracks::Track_rain), row_f);
-//            Serial.println(rainIntensity);
 
-
+            // TREE
             int treeframe = 0;
 
             // 4
@@ -441,8 +442,13 @@ namespace Rain {
             display.drawBitmap((_totalElapsed / 60) % 100 - 20, 50 - rainIntensity * 2, epd_bitmap_stork, 30, 20, INVERSE);
 
 
+            // RAIN
             if (rainIntensity > NUM_DROPS)
                 rainIntensity = NUM_DROPS;
+            _rainTimer.setDuration(0);
+            _rainTimer.setCooldown(100 * (1.0f  - rainIntensity/(float)NUM_DROPS));
+            _rainTimer.update();
+            if(_rainTimer.endedCooldown())
             for (int8_t f = 0; f < rainIntensity; f++) {
                 if (!icons[f].alive) {
                     icons[f] = {
@@ -468,6 +474,7 @@ namespace Rain {
                 }
             }
 
+            // CLOUDS
             for (int8_t c = 0; c < clouds; ++c) {
                 // two lines
                 int16_t y = 3 + (c % 3) * 5;
