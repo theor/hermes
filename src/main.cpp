@@ -8,6 +8,8 @@
   https://github.com/ayushsharma82/AsyncElegantOTA
 */
 
+//#include "TFT_config.h"
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <AsyncTCP.h>
@@ -16,7 +18,8 @@
 #include <AsyncElegantOTA.h>
 #include "WifiConfig.h"
 #include <SPI.h>
-#include <Adafruit_SSD1306.h>
+#include <TFT_eSPI.h>
+#include <SPI.h>
 #include <EEPROM.h>
 
 #include "bitmap.h"
@@ -31,8 +34,9 @@
 
 #include "rocket.h"
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+TFT_eSPI screen = TFT_eSPI();
 
+TFT_eSprite display = TFT_eSprite(&screen);
 TouchButton touchButton(Threshold);
 TouchButton uploadButton(Threshold);
 
@@ -55,6 +59,9 @@ String payload;
 elapsedMillis sleepTimer;
 Renderer *renderer;
 
+#define SSD1351_CMD_DISPLAYOFF 0xAE     ///< See datasheet
+#define SSD1351_CMD_DISPLAYON 0xAF      ///< See datasheet
+
 void setRenderer(RenderMode newMode)
 {
     mode = newMode;
@@ -68,15 +75,15 @@ void setRenderer(RenderMode newMode)
     Serial.println((int) mode);
     switch (mode)
     {
-        case RenderMode::TextRain:renderer = new TextRainRenderer();
+        case RenderMode::TextRain:renderer = new TextRainRenderer(&display);
             break;
-        case RenderMode::TextAndBitmap:renderer = new TextRenderer(true);
+        case RenderMode::TextAndBitmap:renderer = new TextRenderer(&display,true);
             break;
-        case RenderMode::Plant:renderer = new Plant::PlantRenderer();
+        case RenderMode::Plant:renderer = new Plant::PlantRenderer(&display);
             break;
-        case RenderMode::Rain:renderer = new Rain::RainRenderer();
+        case RenderMode::Rain:renderer = new Rain::RainRenderer(&display);
             break;
-        default:renderer = new TextRenderer(false);
+        default:renderer = new TextRenderer(&display,false);
             break;
     }
     SPIFFS.mkdir(String("/") + renderer->getPrefix());
@@ -86,11 +93,15 @@ void setRenderer(RenderMode newMode)
     renderer->start();
 }
 
+//const uint8_t COMMAND_ON[] PROGMEM = {
+//        SSD
+//};
+
 void pullMessage()
 {
-    display.ssd1306_command(SSD1306_DISPLAYON);
-    display.setFont(nullptr);
-    display.setTextColor(WHITE, BLACK);
+    display.writecommand(SSD1351_CMD_DISPLAYON);
+//    display.setFont(nullptr);
+//    display.setTextColor(WHITE, BLACK);
 
     Serial.print("eeprom size:");
     Serial.println(EEPROM.length());
@@ -117,27 +128,13 @@ void callback()
 
 void initDisplay()
 {
+    screen.init();
+    screen.setRotation(1);
+    screen.fillScreen(TFT_BLUE);
+    screen.fillRect(60, 10, 20, 20, TFT_RED);
 
-    // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
-    {
-        Serial.println(F("SSD1306 allocation failed"));
-        for (;;); // Don't proceed, loop forever
-    }
-
-    // Show initial display buffer contents on the screen --
-    // the library initializes this with an Adafruit splash screen.
-
-    // Clear the buffer
-    display.setRotation(1);
-    display.clearDisplay();
-
-    // Draw a single pixel in white
-    display.drawPixel(10, 10, WHITE);
-
-    // Show the display buffer on the screen. You MUST call display() after
-    // drawing commands to make them visible on screen!
-    display.display();
+    display.setColorDepth(16);
+    display.createSprite(TFT_WIDTH, TFT_HEIGHT);
 }
 
 void rocketMode()
@@ -165,11 +162,11 @@ void setup(void)
     EEPROM.begin(512);
     debugMode = EEPROM.readByte(DEBUGMODE_OFFSET) == 1;
 
-    touchButton.attach(T3);
+    touchButton.attach(T8);
     touchButton.interval(50); // interval in ms
     touchButton.reset();
 
-    uploadButton.attach(T4);
+    uploadButton.attach(T9);
     uploadButton.interval(50); // interval in ms
     uploadButton.reset();
 
@@ -203,16 +200,15 @@ void loop(void)
     if (uploadMode)
     {
         display.setCursor(0, 0);
-        display.setTextColor(WHITE, BLACK);
-        display.clearDisplay();
-        display.setFont(nullptr);
+        display.setTextColor(TFT_WHITE, TFT_BLACK);
+        display.fillScreen(TFT_BLACK);
         display.setTextWrap(true);
         display.println(F("Upload mode"));
         display.println(WiFi.localIP());
         display.print(F("Dbg: "));
-        display.print(debugMode);
-
-        display.display();
+        display.println(debugMode);
+        display.print(F("Mode: "));
+        display.println((int)mode);
     }
     else
     {
@@ -235,11 +231,10 @@ void loop(void)
         {
             // Go to sleep now
             Serial.println("Going to sleep now");
-            display.clearDisplay();
-            display.ssd1306_command(SSD1306_DISPLAYOFF);
+            display.writecommand(SSD1351_CMD_DISPLAYOFF);
 
             // touchAttachInterrupt(T2, callback, Threshold);
-            touchAttachInterrupt(T3, callback, Threshold);
+            touchAttachInterrupt(T8, callback, Threshold);
             esp_sleep_enable_touchpad_wakeup();
 
             esp_deep_sleep_start();
@@ -259,6 +254,8 @@ void loop(void)
     bool uploadTouched = uploadButton.read();
     if (uploadButton.changed())
     {
+        digitalWrite(LED_PIN, uploadTouched);
+
         Serial.println(uploadTouched);
         if (!uploadTouched)
             latched = false;
@@ -279,11 +276,11 @@ void loop(void)
         }
         else
         {
-            display.clearDisplay();
+            display.fillScreen(TFT_BLACK);
             display.setCursor(0, 0);
             display.println(F("Connecting to wifi: "));
             display.println(SSID);
-            display.display();
+            display.pushSprite(0,0);
             if (!WiFi.reconnect())
             {
                 WiFi.mode(WIFI_STA);
@@ -293,7 +290,7 @@ void loop(void)
             {
                 Serial.print('.');
                 display.print('.');
-                display.display();
+                display.pushSprite(0,0);
                 delay(500);
             }
 
@@ -307,15 +304,18 @@ void loop(void)
             Serial.println("HTTP server started");
             Serial.println("    connect rocket");
             sync_tcp_connect(device, ROCKET_HOST_IP, SYNC_DEFAULT_PORT);
+            display.println();
+            display.println("Rocket connected");
         }
     }
 
-    Serial.println(currentMillis);
+//    Serial.println(currentMillis);
 
     if(!uploadTouched)
     if (device)
     {
         rocket_update();
     }
-    Serial.println("rocket update done");
+//    Serial.println("rocket update done");
+    display.pushSprite(0,0);
 }

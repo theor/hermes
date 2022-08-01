@@ -2,7 +2,7 @@
 
 #ifndef SIMULATOR
 #include <Arduino.h>
-#include <Adafruit_SSD1306.h>
+#include <TFT_eSPI.h>
 
 class AsyncWebServer;
 
@@ -10,7 +10,7 @@ extern AsyncWebServer server;
 class Renderer;
 
 extern String payload;
-extern Adafruit_SSD1306 display;
+extern TFT_eSprite display;
 //extern AsyncWebServer server;
 extern Renderer *renderer;
 #else

@@ -19,7 +19,7 @@ include(CMakeListsUser.txt)
 endif()
 
 add_custom_target(
-    Production ALL
+    Production ALLa
     COMMAND platformio -c clion run "$<$<NOT:$<CONFIG:All>>:-e${CMAKE_BUILD_TYPE}>"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )

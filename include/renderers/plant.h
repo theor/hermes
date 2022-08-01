@@ -36,6 +36,8 @@ namespace Plant
         elapsedMillis _elapsed;
         const struct sync_track *s_tracks[8];
     public:
+        PlantRenderer(TFT_eSprite *display) : Renderer(display) {}
+
         virtual void press(bool pressed)
         {
 //            if (pressed)
@@ -74,71 +76,65 @@ int o = 0;
             if (_elapsed < 33)
                 return;
 //            display.startscrollleft(0, 0x0F);
-            if (buttonHeld)
-                resetSleepTimer();
-
-            int loopDelta = sync_get_val_int(s_tracks[TRACK_LOOP], curtime_ms * rps / 1000.0);
-            if (loopDelta > 0)
-                curtime_ms = (loopDelta * 1000) / rps;
-//         return row - loopDelta;
-            float row_f = curtime_ms * rps / 1000.0f;
-            // Serial.println(row_f);
-            int8_t x = sync_get_val_int(s_tracks[TRACK_CAN_X], row_f);
-            int8_t y = sync_get_val_int(s_tracks[TRACK_CAN_Y], row_f);
-
-            _elapsed = 0;
-            display.clearDisplay();
-            display.drawBitmap(x, y, bmp_can, 19, 17, WHITE);
-
-            uint8_t stem_length = (uint8_t) sync_get_val(s_tracks[TRACK_FLOWER_STEM], row_f);
-            for (uint8_t s = 0; s < stem_length; s++)
-            {
-                display.drawPixel(30 + stem_offsets[s % 13], 128 - 5 - s, WHITE);
-            }
-
-            {
-                int8_t flowerFrame = (int8_t) sync_get_val_int(s_tracks[TRACK_FLOWER_OPENING], row_f);
-                if (flowerFrame > 8)
-                    flowerFrame = 8;
-                if (flowerFrame > 0)
-                    display.drawBitmap(24, 50, epd_flower_allArray[flowerFrame], 16, 16, WHITE);
-                display.drawBitmap(sync_get_val_int(s_tracks[TRACK_HEART_X], row_f),
-                                   sync_get_val_int(s_tracks[TRACK_HEART_Y], row_f), bmp_heart, HEART_WIDTH,
-                                   HEART_HEIGHT, WHITE);
-            }
-            // j++;
-
-            display.drawFastHLine(5, 128 - 5, 64 - 10, WHITE);
-
-            if (buttonHeld)
-            {
-                icons[i][0] = x + +18 + random(8);
-                icons[i][1] = y + 15;
-                i = ((i + 1) % NUM_DROPS);
-            }
-
-            bool playing = sync_get_val_int(s_tracks[TRACK_LOOP_PLAY], row_f) > 0;
-
-            for (int8_t f = 0; f < NUM_DROPS; f++)
-            {
-                if (!playing && icons[f][1] == 123) { curtime_ms += 160; }
-                if (icons[f][1] < 123)
-                    icons[f][1] += 2;
-                else
-                    icons[f][1] = 128;
-            }
-            for (int8_t f = 0; f < NUM_DROPS; f++)
-            {
-                display.drawPixel(icons[f][0], icons[f][1], WHITE);
-            }
-
-            if (playing)
-                curtime_ms += 160;
-
-//            static const uint8_t PROGMEM scrollList3a[] = {
-//                    SSD1306_SETDISPLAYOFFSET, 0X0a};
-//            display.ssd1306_commandList(scrollList3a, 2);
-            display.display();
+//            if (buttonHeld)
+//                resetSleepTimer();
+//
+//            int loopDelta = sync_get_val_int(s_tracks[TRACK_LOOP], curtime_ms * rps / 1000.0);
+//            if (loopDelta > 0)
+//                curtime_ms = (loopDelta * 1000) / rps;
+//            float row_f = curtime_ms * rps / 1000.0f;
+//            int8_t x = sync_get_val_int(s_tracks[TRACK_CAN_X], row_f);
+//            int8_t y = sync_get_val_int(s_tracks[TRACK_CAN_Y], row_f);
+//
+//            _elapsed = 0;
+//            display.clearDisplay();
+//            display.drawBitmap(x, y, bmp_can, 19, 17, WHITE);
+//
+//            uint8_t stem_length = (uint8_t) sync_get_val(s_tracks[TRACK_FLOWER_STEM], row_f);
+//            for (uint8_t s = 0; s < stem_length; s++)
+//            {
+//                display.drawPixel(30 + stem_offsets[s % 13], 128 - 5 - s, WHITE);
+//            }
+//
+//            {
+//                int8_t flowerFrame = (int8_t) sync_get_val_int(s_tracks[TRACK_FLOWER_OPENING], row_f);
+//                if (flowerFrame > 8)
+//                    flowerFrame = 8;
+//                if (flowerFrame > 0)
+//                    display.drawBitmap(24, 50, epd_flower_allArray[flowerFrame], 16, 16, WHITE);
+//                display.drawBitmap(sync_get_val_int(s_tracks[TRACK_HEART_X], row_f),
+//                                   sync_get_val_int(s_tracks[TRACK_HEART_Y], row_f), bmp_heart, HEART_WIDTH,
+//                                   HEART_HEIGHT, WHITE);
+//            }
+//
+//            display.drawFastHLine(5, 128 - 5, 64 - 10, WHITE);
+//
+//            if (buttonHeld)
+//            {
+//                icons[i][0] = x + +18 + random(8);
+//                icons[i][1] = y + 15;
+//                i = ((i + 1) % NUM_DROPS);
+//            }
+//
+//            bool playing = sync_get_val_int(s_tracks[TRACK_LOOP_PLAY], row_f) > 0;
+//
+//            for (int8_t f = 0; f < NUM_DROPS; f++)
+//            {
+//                if (!playing && icons[f][1] == 123) { curtime_ms += 160; }
+//                if (icons[f][1] < 123)
+//                    icons[f][1] += 2;
+//                else
+//                    icons[f][1] = 128;
+//            }
+//            for (int8_t f = 0; f < NUM_DROPS; f++)
+//            {
+//                display.drawPixel(icons[f][0], icons[f][1], WHITE);
+//            }
+//
+//            if (playing)
+//                curtime_ms += 160;
+//
+//            display.display();
         }
 
     };

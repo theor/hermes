@@ -1,7 +1,7 @@
 #pragma once
 #ifndef SIMULATOR
 #include <Arduino.h>
-#include <Adafruit_SSD1306.h>
+#include <TFT_eSPI.h>
 #endif
 #include "global.h"
 #include "elapsedMillis.h"
@@ -14,7 +14,7 @@
 class Renderer
 {
 public:
-    Renderer(Adafruit_SSD1306* display) : display(display){}
+    Renderer(TFT_eSprite* display) : display(display){}
   virtual void start() = 0;
   virtual void press(bool pressed)
   {
@@ -40,7 +40,7 @@ public:
     }
 
 protected:
-    Adafruit_SSD1306* display;
+    TFT_eSprite* display;
   void resetSleepTimer()
   {
     _requestSleepTimerReset = true;
@@ -57,18 +57,16 @@ protected:
   bool _renderBitmap;
 
 public:
-  TextRenderer(bool renderBitmap) : Renderer(display), _renderBitmap(renderBitmap)
+  TextRenderer(TFT_eSprite* display,bool renderBitmap) : Renderer(display), _renderBitmap(renderBitmap)
   {
   }
   virtual void start()
   {
-    display->clearDisplay();
-    display->setCursor(0, 0);
-    display->println(payload);
-    // Serial.println("Text bitmap=" + String(_renderBitmap ? "true" : "false"));
-    if (this->_renderBitmap)
-      display->drawBitmap(0, 128 - 48, epd_bitmap_et, 64, 47, WHITE);
-    display->display();
+//    display->println(payload);
+//    // Serial.println("Text bitmap=" + String(_renderBitmap ? "true" : "false"));
+//    if (this->_renderBitmap)
+//      display->drawBitmap(0, 128 - 48, epd_bitmap_et, 64, 47, WHITE);
+//    display->display();
   }
 };
 
@@ -83,7 +81,7 @@ protected:
   elapsedMillis _elapsed;
 
 public:
-  TextRainRenderer() : Renderer(display)  {}
+  TextRainRenderer(TFT_eSprite* display) : Renderer(display)  {}
   virtual void press(bool pressed)
   {
   }
@@ -102,14 +100,14 @@ public:
     if (_elapsed < 33)
       return;
     _elapsed = 0;
-    display->clearDisplay();
+    display->fillScreen(0);
     display->setCursor(0, 0);
     display->println(payload);
 
     // Draw each snowflake:
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
-      display->drawBitmap(icons[f][XPOS], icons[f][YPOS], bmp_heart, HEART_WIDTH, HEART_HEIGHT, WHITE);
+      display->drawBitmap(icons[f][XPOS], icons[f][YPOS], bmp_heart, HEART_WIDTH, HEART_HEIGHT, TFT_RED);
     }
     for (int8_t f = 0; f < NUMFLAKES; f++)
     {
@@ -142,7 +140,5 @@ public:
         }
       }
     }
-
-    display->display();
   }
 };
