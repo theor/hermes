@@ -36,7 +36,7 @@ namespace Plant
         elapsedMillis _elapsed;
         const struct sync_track *s_tracks[8];
     public:
-        PlantRenderer(TFT_eSprite *display) : Renderer(display) {}
+        PlantRenderer(Sprite *display) : Renderer(display) {}
 
         virtual void press(bool pressed)
         {

@@ -14,7 +14,7 @@
 class Renderer
 {
 public:
-    Renderer(TFT_eSprite* display) : display(display){}
+    Renderer(Sprite* display) : display(display){}
   virtual void start() = 0;
   virtual void press(bool pressed)
   {
@@ -40,7 +40,7 @@ public:
     }
 
 protected:
-    TFT_eSprite* display;
+    Sprite* display;
   void resetSleepTimer()
   {
     _requestSleepTimerReset = true;
@@ -57,7 +57,7 @@ protected:
   bool _renderBitmap;
 
 public:
-  TextRenderer(TFT_eSprite* display,bool renderBitmap) : Renderer(display), _renderBitmap(renderBitmap)
+  TextRenderer(Sprite* display,bool renderBitmap) : Renderer(display), _renderBitmap(renderBitmap)
   {
   }
   virtual void start()
@@ -81,7 +81,7 @@ protected:
   elapsedMillis _elapsed;
 
 public:
-  TextRainRenderer(TFT_eSprite* display) : Renderer(display)  {}
+  TextRainRenderer(Sprite* display) : Renderer(display)  {}
   virtual void press(bool pressed)
   {
   }

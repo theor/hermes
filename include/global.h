@@ -10,7 +10,7 @@ extern AsyncWebServer server;
 class Renderer;
 
 extern String payload;
-extern TFT_eSprite display;
+extern Sprite display;
 //extern AsyncWebServer server;
 extern Renderer *renderer;
 #else

@@ -19,6 +19,7 @@
 #include "WifiConfig.h"
 #include <SPI.h>
 #include <TFT_eSPI.h>
+#include "sprite.h"
 #include <SPI.h>
 #include <EEPROM.h>
 
@@ -36,7 +37,7 @@
 
 TFT_eSPI screen = TFT_eSPI();
 
-TFT_eSprite display = TFT_eSprite(&screen);
+Sprite display = Sprite(&screen);
 TouchButton touchButton(Threshold);
 TouchButton uploadButton(Threshold);
 
@@ -131,7 +132,7 @@ void initDisplay()
     screen.init();
     screen.setRotation(1);
     screen.fillScreen(TFT_BLUE);
-    screen.fillRect(60, 10, 20, 20, TFT_RED);
+    screen.drawPixel(10, 10, TFT_RED);
 
     display.setColorDepth(16);
     display.createSprite(TFT_WIDTH, TFT_HEIGHT);
