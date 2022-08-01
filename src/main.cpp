@@ -214,7 +214,10 @@ void loop(void)
     else
     {
         if (renderer)
+        {
             renderer->update(touched);
+//            if(renderer->inverted) { screen.writecommand(TFT_INVON); renderer->inverted = false; }
+        }
     }
 
     if (uploadMode && currentMillis - previousMillis >= interval)

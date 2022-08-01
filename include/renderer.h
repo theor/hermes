@@ -38,7 +38,7 @@ public:
     {
         return nullptr;
     }
-
+//bool inverted;
 protected:
     Sprite* display;
   void resetSleepTimer()

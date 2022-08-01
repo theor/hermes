@@ -39,10 +39,10 @@ void Sprite::pushBitmap1bpp(int32_t x, int32_t y, int32_t w, int32_t h, const ui
         {
             uint16_t readPixel = (ptr[(xp>>3) + yw] & (0x80 >> (xp & 0x7)) );
             if(readPixel)
-                drawPixel(ox++, y, fgColor);
+                drawPixel(ox, y, fgColor);
             else if(!transparent)
-                drawPixel(ox++, y, bgColor);
-
+                drawPixel(ox, y, bgColor);
+            ox++;
         }
         y++;
     }
@@ -52,4 +52,4 @@ void Sprite::pushBitmap4bpp(int32_t x0, int32_t y0, int32_t w, int32_t h, uint16
 
 }
 
-Sprite::Sprite(TFT_eSPI *tft) : TFT_eSprite(tft) {}
+Sprite::Sprite(TFT_eSPI *tft) : TFT_eSprite(tft), _screen(tft) {}

@@ -14,6 +14,10 @@ public:
 
     void pushBitmap1bpp(int32_t x, int32_t y, int32_t w, int32_t h, const uint8_t *data, uint16_t fgColor, uint16_t bgColor, bool transparent = false);
     void pushBitmap4bpp(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t *data, uint16_t* colorMap);
+
+    TFT_eSPI* getScreen() { return _screen;}
+protected:
+    TFT_eSPI* _screen;
 };
 
 
